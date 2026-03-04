@@ -9,10 +9,10 @@ import ResultsScreen from './screens/ResultsScreen'
 import SettingsModal from './ui/SettingsModal'
 
 const HISTORY_KEY = 'cognify_history'
-const API_KEY_KEY  = 'cognify_api_key'
-const MAX_HISTORY  = 20
+const API_KEY_KEY = 'cognify_api_key'
+const MAX_HISTORY = 20
 
-// ── helpers ─────────────────────────────────────────────────────
+// ── Storage helpers ──────────────────────────────────────────────
 function getHistory() {
   if (typeof window === 'undefined') return []
   try { return JSON.parse(localStorage.getItem(HISTORY_KEY) || '[]') } catch { return [] }
@@ -31,10 +31,114 @@ function setsEqual(a, b) {
   return true
 }
 
-// ── component ────────────────────────────────────────────────────
+// ── File type helpers ────────────────────────────────────────────
+const FILE_TYPES = {
+  pdf:  { exts: ['.pdf'],                          icon: '📄', label: 'PDF' },
+  docx: { exts: ['.docx'],                         icon: '📝', label: 'Word' },
+  img:  { exts: ['.jpg','.jpeg','.png','.webp','.gif'], icon: '🖼️', label: 'Image' },
+  txt:  { exts: ['.txt', '.md'],                   icon: '📃', label: 'Text' },
+}
+
+function getFileKind(filename) {
+  const lower = filename.toLowerCase()
+  for (const [kind, cfg] of Object.entries(FILE_TYPES)) {
+    if (cfg.exts.some(ext => lower.endsWith(ext))) return kind
+  }
+  return null
+}
+
+function getFileIcon(filename) {
+  const kind = getFileKind(filename)
+  return kind ? FILE_TYPES[kind].icon : '📎'
+}
+
+// ── PDF extraction via PDF.js ────────────────────────────────────
+async function extractPDF(file) {
+  const pdfjsLib = window['pdfjs-dist/build/pdf']
+  if (!pdfjsLib) throw new Error('PDF.js not loaded yet. Please try again.')
+  pdfjsLib.GlobalWorkerOptions.workerSrc =
+    'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js'
+
+  const arrayBuffer = await file.arrayBuffer()
+  const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise
+  let text = ''
+  for (let i = 1; i <= pdf.numPages; i++) {
+    const page = await pdf.getPage(i)
+    const content = await page.getTextContent()
+    text += content.items.map(item => item.str).join(' ') + '\n'
+  }
+  return text.trim()
+}
+
+// ── DOCX extraction via mammoth.js ──────────────────────────────
+async function extractDOCX(file) {
+  const mammoth = window.mammoth
+  if (!mammoth) throw new Error('mammoth.js not loaded yet. Please try again.')
+  const arrayBuffer = await file.arrayBuffer()
+  const result = await mammoth.extractRawText({ arrayBuffer })
+  return result.value.trim()
+}
+
+// ── Text / Markdown extraction ───────────────────────────────────
+async function extractTxt(file) {
+  return await file.text()
+}
+
+// ── Image → base64 ───────────────────────────────────────────────
+function fileToBase64(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader()
+    reader.onload = () => resolve(reader.result.split(',')[1])
+    reader.onerror = reject
+    reader.readAsDataURL(file)
+  })
+}
+
+// ── Image description via OpenAI Vision ─────────────────────────
+async function extractImage(file, apiKey) {
+  const base64 = await fileToBase64(file)
+  const mimeType = file.type || 'image/jpeg'
+
+  const res = await fetch('https://api.openai.com/v1/chat/completions', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': 'Bearer ' + apiKey,
+    },
+    body: JSON.stringify({
+      model: 'gpt-4o-mini',
+      max_tokens: 1500,
+      messages: [
+        {
+          role: 'user',
+          content: [
+            {
+              type: 'image_url',
+              image_url: { url: `data:${mimeType};base64,${base64}` },
+            },
+            {
+              type: 'text',
+              text: 'This image is study material. Please describe and extract all educational content from this image in detail — including any text, diagrams, charts, formulas, labels, concepts, and key information visible. Format your response as structured study notes that can be used to create flashcard questions.',
+            },
+          ],
+        },
+      ],
+    }),
+  })
+
+  if (!res.ok) {
+    const e = await res.json().catch(() => ({}))
+    throw new Error(e.error?.message || 'Vision API error: ' + res.status)
+  }
+
+  const data = await res.json()
+  return data.choices?.[0]?.message?.content || ''
+}
+
+// ════════════════════════════════════════════════════════════════
 export default function CognifyApp() {
   // screen routing
-  const [screen, setScreen] = useState('onboard') // onboard | main | load | quiz | results
+  const [screen, setScreen] = useState('onboard')
 
   // onboarding
   const [obKey, setObKey]     = useState('')
@@ -47,9 +151,12 @@ export default function CognifyApp() {
 
   // main / setup
   const [activeTab, setActiveTab]   = useState('new')
-  const [studyText, setStudyText]   = useState('')
   const [cardCount, setCardCount]   = useState(10)
   const [setupError, setSetupError] = useState('')
+
+  // uploaded files
+  // each: { id, name, kind, file (File obj), status: 'pending'|'processing'|'done'|'error', content, error }
+  const [uploadedFiles, setUploadedFiles] = useState([])
 
   // quiz state
   const [cards, setCards]       = useState([])
@@ -60,7 +167,7 @@ export default function CognifyApp() {
   const [selected, setSelected] = useState(new Set())
   const [studyTitle, setStudyTitle] = useState('')
 
-  // history (loaded from localStorage, refreshed when entering main)
+  // history
   const [history, setHistory] = useState([])
 
   // ── boot ──────────────────────────────────────────────────────
@@ -69,9 +176,7 @@ export default function CognifyApp() {
     if (key) setScreen('main')
   }, [])
 
-  const refreshHistory = useCallback(() => {
-    setHistory(getHistory())
-  }, [])
+  const refreshHistory = useCallback(() => setHistory(getHistory()), [])
 
   useEffect(() => {
     if (screen === 'main') refreshHistory()
@@ -93,11 +198,8 @@ export default function CognifyApp() {
   }
 
   // ── settings ──────────────────────────────────────────────────
-  const openSettings = () => {
-    setNewKey('')
-    setSettingsError('')
-    setSettingsOpen(true)
-  }
+  const openSettings = () => { setNewKey(''); setSettingsError(''); setSettingsOpen(true) }
+  const closeSettings = () => setSettingsOpen(false)
 
   const saveNewKey = () => {
     const k = newKey.trim()
@@ -107,7 +209,7 @@ export default function CognifyApp() {
   }
 
   const deleteKey = () => {
-    if (!confirm('Remove your saved API key? You will need to enter it again.')) return
+    if (!confirm('Remove your saved API key?')) return
     localStorage.removeItem(API_KEY_KEY)
     setSettingsOpen(false)
     goTo('onboard')
@@ -118,13 +220,95 @@ export default function CognifyApp() {
     return k ? k.slice(0, 7) + '…' + k.slice(-4) : 'Not set'
   }
 
+  // ── file management ───────────────────────────────────────────
+  const addFiles = useCallback(async (fileList) => {
+    const apiKey = localStorage.getItem(API_KEY_KEY) || ''
+    const accepted = []
+
+    for (const file of Array.from(fileList)) {
+      const kind = getFileKind(file.name)
+      if (!kind) continue // skip unsupported
+
+      const entry = {
+        id: Date.now() + Math.random(),
+        name: file.name,
+        kind,
+        file,
+        status: 'processing',
+        content: '',
+        error: '',
+      }
+      accepted.push(entry)
+    }
+
+    if (!accepted.length) return
+    setUploadedFiles(prev => [...prev, ...accepted])
+
+    // Process each file
+    for (const entry of accepted) {
+      try {
+        let content = ''
+
+        if (entry.kind === 'pdf') {
+          content = await extractPDF(entry.file)
+        } else if (entry.kind === 'docx') {
+          content = await extractDOCX(entry.file)
+        } else if (entry.kind === 'txt') {
+          content = await extractTxt(entry.file)
+        } else if (entry.kind === 'img') {
+          content = await extractImage(entry.file, apiKey)
+        }
+
+        if (!content.trim()) throw new Error('No extractable content found.')
+
+        setUploadedFiles(prev =>
+          prev.map(f => f.id === entry.id
+            ? { ...f, status: 'done', content }
+            : f
+          )
+        )
+      } catch (err) {
+        setUploadedFiles(prev =>
+          prev.map(f => f.id === entry.id
+            ? { ...f, status: 'error', error: err.message }
+            : f
+          )
+        )
+      }
+    }
+  }, [])
+
+  const removeFile = useCallback((id) => {
+    setUploadedFiles(prev => prev.filter(f => f.id !== id))
+  }, [])
+
+  const clearFiles = useCallback(() => setUploadedFiles([]), [])
+
   // ── generate ──────────────────────────────────────────────────
   const generate = async () => {
     const key = localStorage.getItem(API_KEY_KEY) || ''
-    const text = studyText.trim()
     setSetupError('')
-    if (text.length < 50) { setSetupError('Please enter at least 50 characters of study material.'); return }
-    setStudyTitle(text.slice(0, 50))
+
+    const doneFiles = uploadedFiles.filter(f => f.status === 'done')
+    if (!doneFiles.length) {
+      setSetupError('Please upload at least one file and wait for it to finish processing.')
+      return
+    }
+    if (uploadedFiles.some(f => f.status === 'processing')) {
+      setSetupError('Please wait for all files to finish processing.')
+      return
+    }
+
+    const combinedText = doneFiles
+      .map(f => `=== ${f.name} ===\n${f.content}`)
+      .join('\n\n')
+
+    if (combinedText.length < 50) {
+      setSetupError('Extracted content is too short. Please upload files with more content.')
+      return
+    }
+
+    setStudyTitle(doneFiles.map(f => f.name).join(', ').slice(0, 50))
     goTo('load')
 
     try {
@@ -147,7 +331,7 @@ Generate exactly ${cardCount} flashcards. ~60% type "single" (exactly 1 correct 
             },
             {
               role: 'user',
-              content: `Create ${cardCount} flashcards from this material:\n\n${text.slice(0, 6000)}`,
+              content: `Create ${cardCount} flashcards from the following study material (may be from multiple files):\n\n${combinedText.slice(0, 8000)}`,
             },
           ],
         }),
@@ -165,12 +349,8 @@ Generate exactly ${cardCount} flashcards. ~60% type "single" (exactly 1 correct 
         .trim()
 
       let parsed
-      try {
-        parsed = JSON.parse(raw)
-      } catch {
-        const m = raw.match(/\{[\s\S]*\}/)
-        parsed = m ? JSON.parse(m[0]) : null
-      }
+      try { parsed = JSON.parse(raw) }
+      catch { const m = raw.match(/\{[\s\S]*\}/); parsed = m ? JSON.parse(m[0]) : null }
 
       if (!parsed?.flashcards?.length) throw new Error('No flashcards found in AI response.')
       setCards(parsed.flashcards)
@@ -178,7 +358,7 @@ Generate exactly ${cardCount} flashcards. ~60% type "single" (exactly 1 correct 
     } catch (err) {
       goTo('main')
       let msg = err.message || 'Unknown error'
-      if (/401|Incorrect API|invalid_api/i.test(msg)) msg = 'Invalid API key. Update it via the ⚙ button.'
+      if (/401|Incorrect API|invalid_api/i.test(msg)) msg = 'Invalid API key. Update it via ⚙ Settings.'
       else if (/429/.test(msg))                         msg = 'Rate limit reached. Wait a moment and retry.'
       else if (/fetch|network|failed/i.test(msg))       msg = 'Network error. Check your internet connection.'
       setSetupError(msg)
@@ -187,21 +367,15 @@ Generate exactly ${cardCount} flashcards. ~60% type "single" (exactly 1 correct 
 
   // ── quiz ──────────────────────────────────────────────────────
   const startQuiz = (deck) => {
-    setIdx(0)
-    setScore(0)
-    setWrong([])
-    setAnswered(false)
-    setSelected(new Set())
+    setIdx(0); setScore(0); setWrong([])
+    setAnswered(false); setSelected(new Set())
     if (deck) setCards(deck)
     goTo('quiz')
   }
 
   const retryQuiz = () => {
-    setIdx(0)
-    setScore(0)
-    setWrong([])
-    setAnswered(false)
-    setSelected(new Set())
+    setIdx(0); setScore(0); setWrong([])
+    setAnswered(false); setSelected(new Set())
     goTo('quiz')
   }
 
@@ -209,13 +383,8 @@ Generate exactly ${cardCount} flashcards. ~60% type "single" (exactly 1 correct 
     if (answered) return
     setSelected(prev => {
       const next = new Set(prev)
-      if (type === 'single') {
-        next.clear()
-        next.add(id)
-      } else {
-        if (next.has(id)) next.delete(id)
-        else next.add(id)
-      }
+      if (type === 'single') { next.clear(); next.add(id) }
+      else { next.has(id) ? next.delete(id) : next.add(id) }
       return next
     })
   }
@@ -224,15 +393,21 @@ Generate exactly ${cardCount} flashcards. ~60% type "single" (exactly 1 correct 
     if (answered || selected.size === 0) return
     const card = cards[idx]
     const correctSet = new Set(card.answers.filter(a => a.is_correct).map(a => a.id))
-    const isOk = setsEqual(selected, correctSet)
     setAnswered(true)
-    if (isOk) setScore(s => s + 1)
+    if (setsEqual(selected, correctSet)) setScore(s => s + 1)
     else setWrong(w => [...w, { card, selected: new Set(selected) }])
   }
 
   const nextCard = () => {
     const nextIdx = idx + 1
     if (nextIdx >= cards.length) {
+      const pct = Math.round(((score + (
+        (() => {
+          const card = cards[idx]
+          const correctSet = new Set(card.answers.filter(a => a.is_correct).map(a => a.id))
+          return setsEqual(selected, correctSet) ? 1 : 0
+        })()
+      )) / cards.length) * 100)
       showResults()
     } else {
       setIdx(nextIdx)
@@ -242,20 +417,20 @@ Generate exactly ${cardCount} flashcards. ~60% type "single" (exactly 1 correct 
   }
 
   const showResults = () => {
-    const pct = Math.round((score / cards.length) * 100)
-    // Save session to history
+    const finalScore = score
+    const pct = Math.round((finalScore / cards.length) * 100)
     saveHistory({
-      id:        Date.now(),
-      date:      new Date().toLocaleString(),
-      title:     studyTitle,
+      id: Date.now(),
+      date: new Date().toLocaleString(),
+      title: studyTitle,
       questions: cards.length,
-      score:     pct,
-      cards:     JSON.parse(JSON.stringify(cards)),
+      score: pct,
+      cards: JSON.parse(JSON.stringify(cards)),
     })
     goTo('results')
   }
 
-  // ── history actions ───────────────────────────────────────────
+  // ── history ───────────────────────────────────────────────────
   const replaySession = (session) => {
     setCards(session.cards)
     setStudyTitle(session.title)
@@ -279,35 +454,28 @@ Generate exactly ${cardCount} flashcards. ~60% type "single" (exactly 1 correct 
   }
 
   // ── render ────────────────────────────────────────────────────
-  const showGear = screen !== 'onboard'
-
   return (
     <>
-      {/* Gear / settings button */}
-      {showGear && (
+      {screen !== 'onboard' && (
         <button className="gear-btn" onClick={openSettings} title="Settings">⚙</button>
       )}
 
-      {/* Screens */}
       {screen === 'onboard' && (
         <OnboardScreen
-          obKey={obKey}
-          setObKey={setObKey}
-          obError={obError}
-          onSave={handleOnboardSave}
+          obKey={obKey} setObKey={setObKey}
+          obError={obError} onSave={handleOnboardSave}
         />
       )}
 
       {screen === 'main' && (
         <MainScreen
-          activeTab={activeTab}
-          setActiveTab={setActiveTab}
-          studyText={studyText}
-          setStudyText={setStudyText}
-          cardCount={cardCount}
-          setCardCount={setCardCount}
-          setupError={setupError}
-          onGenerate={generate}
+          activeTab={activeTab} setActiveTab={setActiveTab}
+          uploadedFiles={uploadedFiles}
+          onAddFiles={addFiles}
+          onRemoveFile={removeFile}
+          onClearFiles={clearFiles}
+          cardCount={cardCount} setCardCount={setCardCount}
+          setupError={setupError} onGenerate={generate}
           history={history}
           onReplay={replaySession}
           onDelete={deleteSession}
@@ -319,39 +487,25 @@ Generate exactly ${cardCount} flashcards. ~60% type "single" (exactly 1 correct 
 
       {screen === 'quiz' && (
         <QuizScreen
-          cards={cards}
-          idx={idx}
-          score={score}
-          answered={answered}
-          selected={selected}
-          wrong={wrong}
-          onPick={pick}
-          onSubmit={submitAnswer}
-          onNext={nextCard}
-          onQuit={() => goTo('main')}
+          cards={cards} idx={idx} score={score}
+          answered={answered} selected={selected} wrong={wrong}
+          onPick={pick} onSubmit={submitAnswer}
+          onNext={nextCard} onQuit={() => goTo('main')}
         />
       )}
 
       {screen === 'results' && (
         <ResultsScreen
-          cards={cards}
-          score={score}
-          wrong={wrong}
-          onRetry={retryQuiz}
-          onNewDeck={() => goTo('main')}
+          cards={cards} score={score} wrong={wrong}
+          onRetry={retryQuiz} onNewDeck={() => goTo('main')}
         />
       )}
 
-      {/* Settings modal */}
       {settingsOpen && (
         <SettingsModal
-          maskedKey={maskedKey()}
-          newKey={newKey}
-          setNewKey={setNewKey}
+          maskedKey={maskedKey()} newKey={newKey} setNewKey={setNewKey}
           settingsError={settingsError}
-          onSave={saveNewKey}
-          onDelete={deleteKey}
-          onClose={() => setSettingsOpen(false)}
+          onSave={saveNewKey} onDelete={deleteKey} onClose={closeSettings}
         />
       )}
     </>
