@@ -7,9 +7,7 @@ export default function SettingsModal({
       <div className="modal">
         <div className="row" style={{ justifyContent: 'space-between', marginBottom: 16 }}>
           <h2>⚙ Settings</h2>
-          <button className="btn btn-g" style={{ padding: '4px 10px', fontSize: 18, lineHeight: 1 }} onClick={onClose}>
-            ×
-          </button>
+          <button className="btn btn-g" style={{ padding: '4px 10px', fontSize: 18, lineHeight: 1 }} onClick={onClose}>×</button>
         </div>
 
         <label className="label">Current Key</label>
@@ -23,13 +21,9 @@ export default function SettingsModal({
 
         <label className="label" htmlFor="new-key">Replace with New Key</label>
         <input
-          id="new-key"
-          type="password"
-          className="input input-password"
-          placeholder="AIza..."
-          autoComplete="off"
-          value={newKey}
-          onChange={e => setNewKey(e.target.value)}
+          id="new-key" type="password" className="input input-password"
+          placeholder="sk-or-v1-..." autoComplete="off"
+          value={newKey} onChange={e => setNewKey(e.target.value)}
           onKeyDown={e => e.key === 'Enter' && onSave()}
           style={{ marginBottom: 10 }}
         />
@@ -42,10 +36,9 @@ export default function SettingsModal({
         </div>
 
         <p className="mu" style={{ marginTop: 14, fontSize: 11, textAlign: 'center' }}>
-          Get a free key at{' '}
-          <a href="https://aistudio.google.com/apikey" target="_blank" rel="noreferrer"
-            style={{ color: 'var(--pl)' }}>
-            aistudio.google.com/apikey
+          Manage keys at{' '}
+          <a href="https://openrouter.ai/keys" target="_blank" rel="noreferrer" style={{ color: 'var(--pl)' }}>
+            openrouter.ai/keys
           </a>
         </p>
       </div>

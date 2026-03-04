@@ -14,9 +14,12 @@ const MAX_HISTORY    = 20
 const MAX_OCR_PAGES  = 10
 const PDF_WORKER_URL = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js'
 
-// Gemini model to use — gemini-2.0-flash is free-tier friendly and supports vision
-const GEMINI_MODEL   = 'gemini-2.0-flash'
-const GEMINI_BASE    = 'https://generativelanguage.googleapis.com/v1beta/models'
+// OpenRouter config — OpenAI-compatible endpoint
+const OR_BASE       = 'https://openrouter.ai/api/v1'
+// Primary model: Gemini 2.0 Flash (free on OpenRouter)
+const OR_MODEL_TEXT = 'google/gemini-2.0-flash-exp:free'
+// Vision model: supports image inputs
+const OR_MODEL_VIS  = 'google/gemini-2.0-flash-exp:free'
 
 // ── Storage helpers ───────────────────────────────────────────────
 function getHistory() {
@@ -49,63 +52,73 @@ function getFileKind(filename) {
   return null
 }
 
-// ── Gemini API helpers ────────────────────────────────────────────
-
-// Text-only call with JSON response
-async function geminiText(prompt, systemPrompt, apiKey) {
-  const url = `${GEMINI_BASE}/${GEMINI_MODEL}:generateContent?key=${apiKey}`
-  const body = {
-    contents: [{ parts: [{ text: prompt }] }],
-    systemInstruction: { parts: [{ text: systemPrompt }] },
-    generationConfig: {
-      responseMimeType: 'application/json',
-      temperature: 0.7,
-      maxOutputTokens: 8192,
-    },
-  }
-
-  const res = await fetch(url, {
+// ── OpenRouter: text completion with JSON response ─────────────────
+async function orText(systemPrompt, userPrompt, apiKey) {
+  const res = await fetch(`${OR_BASE}/chat/completions`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(body),
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${apiKey}`,
+      'HTTP-Referer': typeof window !== 'undefined' ? window.location.origin : 'https://cognify.app',
+      'X-Title': 'Cognify Flashcards',
+    },
+    body: JSON.stringify({
+      model: OR_MODEL_TEXT,
+      max_tokens: 8192,
+      temperature: 0.7,
+      response_format: { type: 'json_object' },
+      messages: [
+        { role: 'system', content: systemPrompt },
+        { role: 'user',   content: userPrompt },
+      ],
+    }),
   })
 
   if (!res.ok) {
     const e = await res.json().catch(() => ({}))
-    const msg = e.error?.message || `HTTP ${res.status}`
-    throw new Error(msg)
+    throw new Error(e.error?.message || `HTTP ${res.status}`)
   }
 
   const data = await res.json()
-  return data.candidates?.[0]?.content?.parts?.[0]?.text || ''
+
+  // OpenRouter wraps errors inside a successful 200 sometimes
+  if (data.error) throw new Error(data.error.message || 'OpenRouter error')
+
+  return data.choices?.[0]?.message?.content || ''
 }
 
-// Vision call — sends base64 image + text prompt, returns plain text
-async function geminiVision(base64, mimeType, textPrompt, apiKey) {
-  const url = `${GEMINI_BASE}/${GEMINI_MODEL}:generateContent?key=${apiKey}`
-  const body = {
-    contents: [{
-      parts: [
-        { inlineData: { mimeType, data: base64 } },
-        { text: textPrompt },
-      ],
-    }],
-    generationConfig: { temperature: 0.2, maxOutputTokens: 2048 },
-  }
-
-  const res = await fetch(url, {
+// ── OpenRouter: vision completion (plain text response) ────────────
+async function orVision(base64, mimeType, textPrompt, apiKey) {
+  const res = await fetch(`${OR_BASE}/chat/completions`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(body),
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${apiKey}`,
+      'HTTP-Referer': typeof window !== 'undefined' ? window.location.origin : 'https://cognify.app',
+      'X-Title': 'Cognify Flashcards',
+    },
+    body: JSON.stringify({
+      model: OR_MODEL_VIS,
+      max_tokens: 2048,
+      temperature: 0.2,
+      messages: [{
+        role: 'user',
+        content: [
+          { type: 'image_url', image_url: { url: `data:${mimeType};base64,${base64}` } },
+          { type: 'text', text: textPrompt },
+        ],
+      }],
+    }),
   })
 
   if (!res.ok) {
     const e = await res.json().catch(() => ({}))
-    throw new Error(e.error?.message || `Vision API HTTP ${res.status}`)
+    throw new Error(e.error?.message || `Vision HTTP ${res.status}`)
   }
 
   const data = await res.json()
-  return data.candidates?.[0]?.content?.parts?.[0]?.text?.trim() || ''
+  if (data.error) throw new Error(data.error.message || 'Vision API error')
+  return data.choices?.[0]?.message?.content?.trim() || ''
 }
 
 // ── PDF.js helpers ────────────────────────────────────────────────
@@ -154,29 +167,26 @@ async function extractPDF(file, apiKey, onStatus) {
     return extractedText.trim()
   }
 
-  // Fallback: vision OCR via Gemini
+  // Fallback: vision OCR
   const pagesToOCR = Math.min(totalPages, MAX_OCR_PAGES)
   const skipped    = totalPages > MAX_OCR_PAGES
-  onStatus(
-    `No text layer found. Running AI Vision OCR on ${pagesToOCR}${skipped ? ` of ${totalPages}` : ''} page${pagesToOCR !== 1 ? 's' : ''}…`
-  )
+  onStatus(`No text layer — AI Vision OCR on ${pagesToOCR}${skipped ? ` of ${totalPages}` : ''} page${pagesToOCR !== 1 ? 's' : ''}…`)
 
   const ocrParts = []
   for (let i = 1; i <= pagesToOCR; i++) {
     onStatus(`AI Vision OCR — page ${i} / ${pagesToOCR}…`)
     const page   = await pdf.getPage(i)
     const base64 = await pdfPageToBase64(page)
-    const text   = await geminiVision(
-      base64,
-      'image/png',
-      `This is page ${i} of a PDF (may be scanned or handwritten). Transcribe ALL visible content — text, formulas, table data, labels, headings, bullet points. Output as structured study notes. Be thorough.`,
+    const text   = await orVision(
+      base64, 'image/png',
+      `Page ${i} of a PDF (may be scanned/handwritten). Transcribe ALL content — text, formulas, tables, labels, headings. Output as structured study notes.`,
       apiKey
     )
     if (text) ocrParts.push(`--- Page ${i} ---\n${text}`)
   }
 
   if (!ocrParts.length)
-    throw new Error('Could not extract any content from this PDF (tried text + vision OCR).')
+    throw new Error('Could not extract content from this PDF (tried text + vision OCR).')
 
   const result = ocrParts.join('\n\n')
   onStatus(`OCR complete — ${result.length.toLocaleString()} chars${skipped ? ` (${totalPages - MAX_OCR_PAGES} pages skipped)` : ''}`)
@@ -200,7 +210,7 @@ async function extractTxt(file) {
   return text
 }
 
-// ── Image via Gemini Vision ───────────────────────────────────────
+// ── Image via OpenRouter Vision ───────────────────────────────────
 async function extractImage(file, apiKey) {
   const base64 = await new Promise((res, rej) => {
     const r = new FileReader()
@@ -208,10 +218,9 @@ async function extractImage(file, apiKey) {
     r.onerror = rej
     r.readAsDataURL(file)
   })
-  const text = await geminiVision(
-    base64,
-    file.type || 'image/jpeg',
-    'This image is study material. Extract all educational content — text, diagrams, charts, formulas, labels, concepts — as structured study notes suitable for flashcard questions.',
+  const text = await orVision(
+    base64, file.type || 'image/jpeg',
+    'This image is study material. Extract all educational content — text, diagrams, charts, formulas, labels — as structured study notes for flashcard questions.',
     apiKey
   )
   if (!text) throw new Error('No content returned from Vision API.')
@@ -239,30 +248,27 @@ export default function CognifyApp() {
   const [studyTitle, setStudyTitle]       = useState('')
   const [history, setHistory]             = useState([])
 
-  useEffect(() => {
-    if (localStorage.getItem(API_KEY_KEY)) setScreen('main')
-  }, [])
-
+  useEffect(() => { if (localStorage.getItem(API_KEY_KEY)) setScreen('main') }, [])
   const refreshHistory = useCallback(() => setHistory(getHistory()), [])
   useEffect(() => { if (screen === 'main') refreshHistory() }, [screen, refreshHistory])
 
   const goTo = (name) => { setScreen(name); window.scrollTo({ top: 0, behavior: 'smooth' }) }
 
-  // ── Onboarding ───────────────────────────────────────────────────
+  // ── Onboarding ────────────────────────────────────────────────────
   const handleOnboardSave = () => {
     const k = obKey.trim()
-    if (!k.startsWith('AIza')) { setObError('Google AI key should start with "AIza"'); return }
+    if (k.length < 20) { setObError('Please enter a valid OpenRouter API key.'); return }
     localStorage.setItem(API_KEY_KEY, k)
     setObError('')
     goTo('main')
   }
 
-  // ── Settings ─────────────────────────────────────────────────────
+  // ── Settings ──────────────────────────────────────────────────────
   const openSettings  = () => { setNewKey(''); setSettingsError(''); setSettingsOpen(true) }
   const closeSettings = () => setSettingsOpen(false)
   const saveNewKey = () => {
     const k = newKey.trim()
-    if (!k.startsWith('AIza')) { setSettingsError('Google AI key should start with "AIza"'); return }
+    if (k.length < 20) { setSettingsError('Please enter a valid OpenRouter API key.'); return }
     localStorage.setItem(API_KEY_KEY, k)
     setSettingsOpen(false)
   }
@@ -284,15 +290,10 @@ export default function CognifyApp() {
   const addFiles = useCallback(async (fileList) => {
     const apiKey   = localStorage.getItem(API_KEY_KEY) || ''
     const accepted = []
-
     for (const file of Array.from(fileList)) {
       const kind = getFileKind(file.name)
       if (!kind) continue
-      accepted.push({
-        id: Date.now() + Math.random(),
-        name: file.name, kind, file,
-        status: 'processing', statusMsg: 'Waiting…', content: '', error: '',
-      })
+      accepted.push({ id: Date.now() + Math.random(), name: file.name, kind, file, status: 'processing', statusMsg: 'Waiting…', content: '', error: '' })
     }
     if (!accepted.length) return
     setUploadedFiles(prev => [...prev, ...accepted])
@@ -301,7 +302,7 @@ export default function CognifyApp() {
       const update = (statusMsg) => setFileStatus(entry.id, { statusMsg })
       try {
         let content = ''
-        if (entry.kind === 'pdf')  content = await extractPDF(entry.file, apiKey, update)
+        if      (entry.kind === 'pdf')  content = await extractPDF(entry.file, apiKey, update)
         else if (entry.kind === 'docx') { update('Extracting Word document…'); content = await extractDOCX(entry.file) }
         else if (entry.kind === 'txt')  { update('Reading file…');              content = await extractTxt(entry.file) }
         else if (entry.kind === 'img')  { update('Sending to AI Vision…');      content = await extractImage(entry.file, apiKey) }
@@ -319,36 +320,24 @@ export default function CognifyApp() {
   const generate = async () => {
     const key = localStorage.getItem(API_KEY_KEY) || ''
     setSetupError('')
-
-    if (uploadedFiles.some(f => f.status === 'processing')) {
-      setSetupError('Please wait for all files to finish processing.'); return
-    }
+    if (uploadedFiles.some(f => f.status === 'processing')) { setSetupError('Please wait for all files to finish processing.'); return }
     const doneFiles = uploadedFiles.filter(f => f.status === 'done')
-    if (!doneFiles.length) {
-      setSetupError('Upload at least one file and wait for processing to complete.'); return
-    }
+    if (!doneFiles.length) { setSetupError('Upload at least one file and wait for processing to complete.'); return }
 
-    const combinedText = doneFiles
-      .map(f => `=== ${f.name} ===\n${f.content}`)
-      .join('\n\n')
-
-    if (combinedText.length < 50) {
-      setSetupError('Extracted content is too short.'); return
-    }
+    const combinedText = doneFiles.map(f => `=== ${f.name} ===\n${f.content}`).join('\n\n')
+    if (combinedText.length < 50) { setSetupError('Extracted content is too short.'); return }
 
     setStudyTitle(doneFiles.map(f => f.name).join(', ').slice(0, 50))
     goTo('load')
 
     try {
-      const systemPrompt = `You are an expert educator. Return ONLY valid JSON matching this schema exactly:
+      const systemPrompt = `You are an expert educator. Return ONLY valid JSON matching this exact schema — no markdown, no code fences:
 {"flashcards":[{"id":"q1","question":"...","type":"single","answers":[{"id":"a","text":"...","is_correct":true}],"explanation":"..."}]}
-Generate exactly ${cardCount} flashcards. ~60% type "single" (exactly 1 correct answer), ~40% type "multi" (2-3 correct answers). Each question has 3-5 options. Make distractors plausible. Explanations: 1-2 sentences.`
+Generate exactly ${cardCount} flashcards. ~60% type "single" (exactly 1 correct), ~40% type "multi" (2-3 correct). Each has 3-5 answer options. Distractors must be plausible. Explanations: 1-2 sentences.`
 
       const userPrompt = `Create ${cardCount} flashcards from this study material (${doneFiles.length} file${doneFiles.length !== 1 ? 's' : ''}):\n\n${combinedText.slice(0, 12000)}`
 
-      const raw = await geminiText(userPrompt, systemPrompt, key)
-
-      // Strip markdown fences if present
+      const raw = await orText(systemPrompt, userPrompt, key)
       const cleaned = raw.replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/i, '').trim()
 
       let parsed
@@ -361,25 +350,16 @@ Generate exactly ${cardCount} flashcards. ~60% type "single" (exactly 1 correct 
     } catch (err) {
       goTo('main')
       let msg = err.message || 'Unknown error'
-      if (/API_KEY_INVALID|api key not valid/i.test(msg)) msg = 'Invalid API key. Update it via ⚙ Settings.'
-      else if (/quota|429|RESOURCE_EXHAUSTED/i.test(msg)) msg = 'Rate limit reached. Wait a moment and retry.'
-      else if (/fetch|network|failed/i.test(msg))         msg = 'Network error. Check your connection.'
+      if (/invalid.*key|unauthorized|401/i.test(msg))    msg = 'Invalid API key. Update it via ⚙ Settings.'
+      else if (/quota|429|rate.?limit|exceeded/i.test(msg)) msg = 'Rate limit reached. Wait a moment and retry, or try a different free model.'
+      else if (/fetch|network|failed/i.test(msg))          msg = 'Network error. Check your connection.'
       setSetupError(msg)
     }
   }
 
   // ── Quiz ──────────────────────────────────────────────────────────
-  const startQuiz = (deck) => {
-    setIdx(0); setScore(0); setWrong([])
-    setAnswered(false); setSelected(new Set())
-    if (deck) setCards(deck)
-    goTo('quiz')
-  }
-  const retryQuiz = () => {
-    setIdx(0); setScore(0); setWrong([])
-    setAnswered(false); setSelected(new Set())
-    goTo('quiz')
-  }
+  const startQuiz = (deck) => { setIdx(0); setScore(0); setWrong([]); setAnswered(false); setSelected(new Set()); if (deck) setCards(deck); goTo('quiz') }
+  const retryQuiz = () => { setIdx(0); setScore(0); setWrong([]); setAnswered(false); setSelected(new Set()); goTo('quiz') }
   const pick = (id, type) => {
     if (answered) return
     setSelected(prev => {
@@ -397,17 +377,13 @@ Generate exactly ${cardCount} flashcards. ~60% type "single" (exactly 1 correct 
     else setWrong(w => [...w, { card: cards[idx], selected: new Set(selected) }])
   }
   const nextCard = () => {
-    const nextIdx = idx + 1
-    if (nextIdx >= cards.length) showResults()
-    else { setIdx(nextIdx); setAnswered(false); setSelected(new Set()) }
+    const n = idx + 1
+    if (n >= cards.length) showResults()
+    else { setIdx(n); setAnswered(false); setSelected(new Set()) }
   }
   const showResults = () => {
     const pct = Math.round((score / cards.length) * 100)
-    saveHistory({
-      id: Date.now(), date: new Date().toLocaleString(),
-      title: studyTitle, questions: cards.length, score: pct,
-      cards: JSON.parse(JSON.stringify(cards)),
-    })
+    saveHistory({ id: Date.now(), date: new Date().toLocaleString(), title: studyTitle, questions: cards.length, score: pct, cards: JSON.parse(JSON.stringify(cards)) })
     goTo('results')
   }
 
@@ -428,45 +404,27 @@ Generate exactly ${cardCount} flashcards. ~60% type "single" (exactly 1 correct 
     a.click()
   }
 
-  // ── Render ────────────────────────────────────────────────────────
   return (
     <>
-      {screen !== 'onboard' && (
-        <button className="gear-btn" onClick={openSettings} title="Settings">⚙</button>
-      )}
-      {screen === 'onboard' && (
-        <OnboardScreen obKey={obKey} setObKey={setObKey} obError={obError} onSave={handleOnboardSave} />
-      )}
+      {screen !== 'onboard' && <button className="gear-btn" onClick={openSettings} title="Settings">⚙</button>}
+
+      {screen === 'onboard' && <OnboardScreen obKey={obKey} setObKey={setObKey} obError={obError} onSave={handleOnboardSave} />}
+
       {screen === 'main' && (
         <MainScreen
           activeTab={activeTab} setActiveTab={setActiveTab}
-          uploadedFiles={uploadedFiles}
-          onAddFiles={addFiles} onRemoveFile={removeFile} onClearFiles={clearFiles}
+          uploadedFiles={uploadedFiles} onAddFiles={addFiles} onRemoveFile={removeFile} onClearFiles={clearFiles}
           cardCount={cardCount} setCardCount={setCardCount}
           setupError={setupError} onGenerate={generate}
-          history={history}
-          onReplay={replaySession} onDelete={deleteSession} onExport={exportHistory}
+          history={history} onReplay={replaySession} onDelete={deleteSession} onExport={exportHistory}
         />
       )}
+
       {screen === 'load'    && <LoadingScreen />}
-      {screen === 'quiz'    && (
-        <QuizScreen
-          cards={cards} idx={idx} score={score}
-          answered={answered} selected={selected} wrong={wrong}
-          onPick={pick} onSubmit={submitAnswer}
-          onNext={nextCard} onQuit={() => goTo('main')}
-        />
-      )}
-      {screen === 'results' && (
-        <ResultsScreen cards={cards} score={score} wrong={wrong} onRetry={retryQuiz} onNewDeck={() => goTo('main')} />
-      )}
-      {settingsOpen && (
-        <SettingsModal
-          maskedKey={maskedKey()} newKey={newKey} setNewKey={setNewKey}
-          settingsError={settingsError}
-          onSave={saveNewKey} onDelete={deleteKey} onClose={closeSettings}
-        />
-      )}
+      {screen === 'quiz'    && <QuizScreen cards={cards} idx={idx} score={score} answered={answered} selected={selected} wrong={wrong} onPick={pick} onSubmit={submitAnswer} onNext={nextCard} onQuit={() => goTo('main')} />}
+      {screen === 'results' && <ResultsScreen cards={cards} score={score} wrong={wrong} onRetry={retryQuiz} onNewDeck={() => goTo('main')} />}
+
+      {settingsOpen && <SettingsModal maskedKey={maskedKey()} newKey={newKey} setNewKey={setNewKey} settingsError={settingsError} onSave={saveNewKey} onDelete={deleteKey} onClose={closeSettings} />}
     </>
   )
 }
