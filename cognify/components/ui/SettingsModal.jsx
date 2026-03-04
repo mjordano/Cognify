@@ -1,3 +1,4 @@
+'use client'
 export default function SettingsModal({
   maskedKey, newKey, setNewKey, settingsError,
   onSave, onDelete, onClose,
