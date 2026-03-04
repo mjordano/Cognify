@@ -1,3 +1,4 @@
+'use client'
 export default function OnboardScreen({ obKey, setObKey, obError, onSave }) {
   return (
     <div className="screen">
