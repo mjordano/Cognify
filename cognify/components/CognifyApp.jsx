@@ -18,6 +18,7 @@ const PDF_WORKER_URL = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/p
 const OR_BASE       = 'https://openrouter.ai/api/v1'
 // Primary model: Gemini 2.0 Flash (free on OpenRouter)
 const OR_MODEL_TEXT = 'openrouter/free'
+// Vision model: supports image inputs
 const OR_MODEL_VIS  = 'openrouter/free'
 
 // ── Storage helpers ───────────────────────────────────────────────
@@ -51,8 +52,46 @@ function getFileKind(filename) {
   return null
 }
 
+// ── JSON repair: close a truncated flashcards array/object ────────
+function repairJSON(raw) {
+  // Strip markdown fences
+  let s = raw.replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/i, '').trim()
+
+  // Try direct parse first
+  try { return JSON.parse(s) } catch {}
+
+  // Find last complete flashcard object by scanning for complete "}]}" or "}]" patterns
+  // Strategy: keep trimming from the end until we can close the structure
+  const base = s.indexOf('{"flashcards"')
+  if (base === -1) return null
+  s = s.slice(base)
+
+  // Try closing the array+object at progressively earlier positions
+  for (let i = s.length; i > 10; i--) {
+    const chunk = s.slice(0, i).trimEnd()
+    // Try various closings
+    const attempts = [
+      chunk,
+      chunk + ']}',
+      chunk + '"]}',
+      chunk + '"}]}',
+      chunk + '"]}',
+      chunk.replace(/,\s*$/, '') + ']}',
+      chunk.replace(/,\s*$/, '') + '"]}',
+      chunk.replace(/,\s*$/, '') + '"}]}',
+    ]
+    for (const attempt of attempts) {
+      try {
+        const obj = JSON.parse(attempt)
+        if (obj?.flashcards?.length) return obj
+      } catch {}
+    }
+  }
+  return null
+}
+
 // ── OpenRouter: text completion with JSON response ─────────────────
-async function orText(systemPrompt, userPrompt, apiKey) {
+async function orText(systemPrompt, userPrompt, apiKey, maxTokens = 8192) {
   const res = await fetch(`${OR_BASE}/chat/completions`, {
     method: 'POST',
     headers: {
@@ -63,7 +102,7 @@ async function orText(systemPrompt, userPrompt, apiKey) {
     },
     body: JSON.stringify({
       model: OR_MODEL_TEXT,
-      max_tokens: 8192,
+      max_tokens: maxTokens,
       temperature: 0.7,
       response_format: { type: 'json_object' },
       messages: [
@@ -332,16 +371,18 @@ export default function CognifyApp() {
     try {
       const systemPrompt = `You are an expert educator. Return ONLY valid JSON matching this exact schema — no markdown, no code fences:
 {"flashcards":[{"id":"q1","question":"...","type":"single","answers":[{"id":"a","text":"...","is_correct":true}],"explanation":"..."}]}
-Generate exactly ${cardCount} flashcards. ~60% type "single" (exactly 1 correct), ~40% type "multi" (2-3 correct). Each has 3-5 answer options. Distractors must be plausible. Explanations: 1-2 sentences.`
+Generate exactly ${cardCount} flashcards. ~60% type "single" (exactly 1 correct), ~40% type "multi" (2-3 correct). Each has 3-5 answer options. Distractors must be plausible. Explanations: 1-2 sentences.
+CRITICAL: Detect the language of the study material and write ALL content (questions, answers, explanations) in that same language. Do not translate into English.`
 
-      const userPrompt = `Create ${cardCount} flashcards from this study material (${doneFiles.length} file${doneFiles.length !== 1 ? 's' : ''}):\n\n${combinedText.slice(0, 12000)}`
+      // ~400 tokens per flashcard + 500 buffer; cap at 16000 to stay within model limits
+      const maxTokens = Math.min(cardCount * 400 + 500, 16000)
 
-      const raw = await orText(systemPrompt, userPrompt, key)
-      const cleaned = raw.replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/i, '').trim()
+      // Trim input: leave room for the response (rough estimate: 4 chars per token)
+      const inputBudget = Math.max(2000, 32000 - maxTokens) * 4
+      const userPrompt = `Create ${cardCount} flashcards from this study material (${doneFiles.length} file${doneFiles.length !== 1 ? 's' : ''}):\n\n${combinedText.slice(0, inputBudget)}`
 
-      let parsed
-      try { parsed = JSON.parse(cleaned) }
-      catch { const m = cleaned.match(/\{[\s\S]*\}/); parsed = m ? JSON.parse(m[0]) : null }
+      const raw = await orText(systemPrompt, userPrompt, key, maxTokens)
+      const parsed = repairJSON(raw)
 
       if (!parsed?.flashcards?.length) throw new Error('No flashcards found in AI response.')
       setCards(parsed.flashcards)
