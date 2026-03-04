@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import OnboardScreen from './screens/OnboardScreen'
 import MainScreen from './screens/MainScreen'
 import LoadingScreen from './screens/LoadingScreen'
@@ -280,6 +280,7 @@ export default function CognifyApp() {
   const [cards, setCards]                 = useState([])
   const [idx, setIdx]                     = useState(0)
   const [score, setScore]                 = useState(0)
+  const scoreRef = useRef(0)  // sync ref — avoids stale closure in showResults
   const [wrong, setWrong]                 = useState([])
   const [answered, setAnswered]           = useState(false)
   const [selected, setSelected]           = useState(new Set())
@@ -398,8 +399,8 @@ CRITICAL: Detect the language of the study material and write ALL content (quest
   }
 
   // ── Quiz ──────────────────────────────────────────────────────────
-  const startQuiz = (deck) => { setIdx(0); setScore(0); setWrong([]); setAnswered(false); setSelected(new Set()); if (deck) setCards(deck); goTo('quiz') }
-  const retryQuiz = () => { setIdx(0); setScore(0); setWrong([]); setAnswered(false); setSelected(new Set()); goTo('quiz') }
+  const startQuiz = (deck) => { scoreRef.current = 0; setIdx(0); setScore(0); setWrong([]); setAnswered(false); setSelected(new Set()); if (deck) setCards(deck); goTo('quiz') }
+  const retryQuiz = () => { scoreRef.current = 0; setIdx(0); setScore(0); setWrong([]); setAnswered(false); setSelected(new Set()); goTo('quiz') }
   const pick = (id, type) => {
     if (answered) return
     setSelected(prev => {
@@ -413,7 +414,7 @@ CRITICAL: Detect the language of the study material and write ALL content (quest
     if (answered || selected.size === 0) return
     const correctSet = new Set(cards[idx].answers.filter(a => a.is_correct).map(a => a.id))
     setAnswered(true)
-    if (setsEqual(selected, correctSet)) setScore(s => s + 1)
+    if (setsEqual(selected, correctSet)) { scoreRef.current += 1; setScore(scoreRef.current) }
     else setWrong(w => [...w, { card: cards[idx], selected: new Set(selected) }])
   }
   const nextCard = () => {
@@ -422,7 +423,8 @@ CRITICAL: Detect the language of the study material and write ALL content (quest
     else { setIdx(n); setAnswered(false); setSelected(new Set()) }
   }
   const showResults = () => {
-    const pct = Math.round((score / cards.length) * 100)
+    const finalScore = scoreRef.current
+    const pct = Math.round((finalScore / cards.length) * 100)
     saveHistory({ id: Date.now(), date: new Date().toLocaleString(), title: studyTitle, questions: cards.length, score: pct, cards: JSON.parse(JSON.stringify(cards)) })
     goTo('results')
   }

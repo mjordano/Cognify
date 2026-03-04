@@ -88,8 +88,10 @@ export default function ResultsScreen({ cards, score, wrong, onRetry, onNewDeck 
               Review — Incorrect Answers
             </p>
             {wrong.map(({ card, selected: sel }, i) => {
-              const correctTexts  = card.answers.filter(a => a.is_correct).map(a => a.text).join(', ')
-              const selectedTexts = card.answers.filter(a => sel.has(a.id)).map(a => a.text).join(', ') || '—'
+              if (!card?.answers) return null
+              const selSet = sel instanceof Set ? sel : new Set()
+              const correctTexts  = card.answers.filter(a => a?.is_correct).map(a => a.text).join(', ')
+              const selectedTexts = card.answers.filter(a => selSet.has(a?.id)).map(a => a.text).join(', ') || '—'
               return (
                 <div key={i} className="review-item">
                   <p style={{ fontWeight: 600, marginBottom: 5, fontSize: 13 }}>{card.question}</p>
