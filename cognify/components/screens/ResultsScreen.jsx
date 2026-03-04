@@ -2,7 +2,7 @@ import { useEffect, useRef } from 'react'
 
 export default function ResultsScreen({ cards, score, wrong, onRetry, onNewDeck }) {
   const arcRef = useRef(null)
-  const total  = cards.length
+  const total  = cards?.length || 0
   const pct    = total > 0 ? Math.round((score / total) * 100) : 0
   const circ   = 352
 
@@ -17,16 +17,18 @@ export default function ResultsScreen({ cards, score, wrong, onRetry, onNewDeck 
     return () => clearTimeout(t)
   }, [pct])
 
+  // Normalize wrong entries — ensure answers exists and sel is a Set
+  const safeWrong = (wrong || []).filter(w => w?.card && Array.isArray(w.card.answers))
+
   return (
     <div className="screen">
       <div className="wrap">
-        {/* Header */}
         <div className="center" style={{ marginBottom: 20 }}>
           <p className="mu" style={{ marginBottom: 8 }}>Quiz complete</p>
           <h1>Results</h1>
         </div>
 
-        {/* Score card */}
+        {/* Score ring */}
         <div className="card" style={{ padding: 28, textAlign: 'center', marginBottom: 16 }}>
           <div className="ring-wrap" style={{ marginBottom: 16 }}>
             <svg width="130" height="130" viewBox="0 0 130 130">
@@ -34,9 +36,7 @@ export default function ResultsScreen({ cards, score, wrong, onRetry, onNewDeck 
               <circle
                 ref={arcRef}
                 cx="65" cy="65" r="56"
-                fill="none"
-                stroke="url(#rg)"
-                strokeWidth="7"
+                fill="none" stroke="url(#rg)" strokeWidth="7"
                 strokeLinecap="round"
                 strokeDasharray={circ}
                 strokeDashoffset={circ}
@@ -72,12 +72,9 @@ export default function ResultsScreen({ cards, score, wrong, onRetry, onNewDeck 
           </div>
         </div>
 
-        {/* Wrong answers review */}
-        {wrong.length === 0 ? (
-          <div
-            className="card"
-            style={{ padding: 20, textAlign: 'center', borderColor: '#34d39944', marginBottom: 16 }}
-          >
+        {/* Review */}
+        {safeWrong.length === 0 ? (
+          <div className="card" style={{ padding: 20, textAlign: 'center', borderColor: '#34d39944', marginBottom: 16 }}>
             <p style={{ fontSize: '2rem' }}>🎉</p>
             <p style={{ color: 'var(--ok)', fontWeight: 700, marginTop: 8 }}>Perfect score!</p>
             <p className="mu" style={{ marginTop: 4 }}>You got every question right.</p>
@@ -87,11 +84,28 @@ export default function ResultsScreen({ cards, score, wrong, onRetry, onNewDeck 
             <p className="mu" style={{ fontSize: 11, textTransform: 'uppercase', letterSpacing: '.07em', marginBottom: 12 }}>
               Review — Incorrect Answers
             </p>
-            {wrong.map(({ card, selected: sel }, i) => {
-              if (!card?.answers) return null
-              const selSet = sel instanceof Set ? sel : new Set()
-              const correctTexts  = card.answers.filter(a => a?.is_correct).map(a => a.text).join(', ')
-              const selectedTexts = card.answers.filter(a => selSet.has(a?.id)).map(a => a.text).join(', ') || '—'
+            {safeWrong.map(({ card, selected: sel }, i) => {
+              // Reconstruct Set safely regardless of how sel was stored
+              let selSet
+              if (sel instanceof Set) {
+                selSet = sel
+              } else if (sel && typeof sel === 'object') {
+                // Handles plain objects, arrays, or serialized Sets
+                selSet = new Set(Array.isArray(sel) ? sel : Object.keys(sel))
+              } else {
+                selSet = new Set()
+              }
+
+              const correctTexts  = card.answers
+                .filter(a => a?.is_correct)
+                .map(a => a.text)
+                .join(', ') || '—'
+
+              const selectedTexts = card.answers
+                .filter(a => a?.id && selSet.has(a.id))
+                .map(a => a.text)
+                .join(', ') || '—'
+
               return (
                 <div key={i} className="review-item">
                   <p style={{ fontWeight: 600, marginBottom: 5, fontSize: 13 }}>{card.question}</p>
@@ -101,14 +115,13 @@ export default function ResultsScreen({ cards, score, wrong, onRetry, onNewDeck 
                   <p className="mu" style={{ color: 'var(--ok)', marginBottom: 5 }}>
                     Correct: {correctTexts}
                   </p>
-                  <p className="mu" style={{ color: '#c4b5fd' }}>{card.explanation}</p>
+                  <p className="mu" style={{ color: '#c4b5fd' }}>{card.explanation || ''}</p>
                 </div>
               )
             })}
           </div>
         )}
 
-        {/* Action buttons */}
         <div className="row" style={{ gap: 10 }}>
           <button className="btn btn-p" style={{ flex: 1 }} onClick={onRetry}>↺ Retry Deck</button>
           <button className="btn btn-g" style={{ flex: 1 }} onClick={onNewDeck}>+ New Deck</button>

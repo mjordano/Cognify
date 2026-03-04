@@ -5,9 +5,7 @@ export default function QuizScreen({
   onPick, onSubmit, onNext, onQuit,
 }) {
   const cardRef = useRef(null)
-  const card = cards[idx]
 
-  // Re-trigger cardIn animation on question change
   useEffect(() => {
     if (!cardRef.current) return
     cardRef.current.style.animation = 'none'
@@ -15,52 +13,54 @@ export default function QuizScreen({
     cardRef.current.style.animation = 'cardIn 0.35s ease'
   }, [idx])
 
-  if (!card) return null
+  // ── Guards ────────────────────────────────────────────────────────
+  const card = cards?.[idx]
+  if (!card || !Array.isArray(card.answers)) return null
 
-  const correctSet = new Set(card.answers.filter(a => a.is_correct).map(a => a.id))
+  // Always work with a real Set
+  const sel = selected instanceof Set ? selected : new Set()
+
+  const correctSet = new Set(
+    card.answers.filter(a => a?.is_correct).map(a => a.id)
+  )
   const pct = ((idx + 1) / cards.length) * 100
+
+  const isCorrect = answered && sel.size === correctSet.size &&
+    [...sel].every(v => correctSet.has(v))
 
   const getOptClass = (id) => {
     let cls = 'opt'
     if (!answered) {
-      if (selected.has(id)) cls += ' sel'
+      if (sel.has(id)) cls += ' sel'
     } else {
       cls += ' locked'
-      if (correctSet.has(id) && selected.has(id))  cls += ' ok'
-      else if (!correctSet.has(id) && selected.has(id)) cls += ' bad'
-      else if (correctSet.has(id) && !selected.has(id)) cls += ' missed'
+      if (correctSet.has(id) && sel.has(id))       cls += ' ok'
+      else if (!correctSet.has(id) && sel.has(id)) cls += ' bad'
+      else if (correctSet.has(id) && !sel.has(id)) cls += ' missed'
     }
     return cls
   }
 
   const getIndStyle = (id) => {
     if (!answered) {
-      if (selected.has(id)) {
-        return card.type === 'multi'
-          ? { borderColor: 'var(--ac)', color: 'var(--ac)', background: '#e879f922' }
-          : { borderColor: 'var(--pl)', color: 'var(--pl)', background: 'var(--pg)' }
-      }
-      return {}
+      if (!sel.has(id)) return {}
+      return card.type === 'multi'
+        ? { borderColor: 'var(--ac)', color: 'var(--ac)', background: '#e879f922' }
+        : { borderColor: 'var(--pl)', color: 'var(--pl)', background: 'var(--pg)' }
     }
-    if (correctSet.has(id) && selected.has(id))  return { borderColor: 'var(--ok)', color: 'var(--ok)', background: '#34d39920' }
-    if (!correctSet.has(id) && selected.has(id)) return { borderColor: 'var(--er)', color: 'var(--er)', background: '#f8717120' }
-    if (correctSet.has(id) && !selected.has(id)) return { borderColor: 'var(--ok)', color: 'var(--ok)' }
+    if (correctSet.has(id) && sel.has(id))       return { borderColor: 'var(--ok)', color: 'var(--ok)', background: '#34d39920' }
+    if (!correctSet.has(id) && sel.has(id))      return { borderColor: 'var(--er)', color: 'var(--er)', background: '#f8717120' }
+    if (correctSet.has(id) && !sel.has(id))      return { borderColor: 'var(--ok)', color: 'var(--ok)' }
     return {}
   }
 
   const getIndLabel = (id, letter) => {
     if (!answered) return letter.toUpperCase()
-    if (correctSet.has(id) && selected.has(id))  return '✓'
-    if (!correctSet.has(id) && selected.has(id)) return '✗'
-    if (correctSet.has(id) && !selected.has(id)) return '!'
+    if (correctSet.has(id) && sel.has(id))       return '✓'
+    if (!correctSet.has(id) && sel.has(id))      return '✗'
+    if (correctSet.has(id) && !sel.has(id))      return '!'
     return letter.toUpperCase()
   }
-
-  const isCorrect = answered && (() => {
-    if (correctSet.size !== selected.size) return false
-    for (const v of selected) if (!correctSet.has(v)) return false
-    return true
-  })()
 
   return (
     <div className="screen">
@@ -85,7 +85,6 @@ export default function QuizScreen({
 
         {/* Card */}
         <div className="card" style={{ padding: 20 }} ref={cardRef}>
-          {/* Header row */}
           <div className="row" style={{ justifyContent: 'space-between', marginBottom: 16 }}>
             <span className={`tag ${card.type === 'multi' ? 'tag-m' : 'tag-s'}`}>
               {card.type === 'multi' ? 'multiple choice' : 'single choice'}
@@ -95,7 +94,6 @@ export default function QuizScreen({
             </span>
           </div>
 
-          {/* Question */}
           <p style={{ fontSize: '1.05rem', fontWeight: 600, lineHeight: 1.5, marginBottom: 6 }}>
             {card.question}
           </p>
@@ -103,11 +101,10 @@ export default function QuizScreen({
             {card.type === 'multi' ? '✓ Select all that apply' : '○ Select one answer'}
           </p>
 
-          {/* Answers */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
             {card.answers.map((ans, i) => (
               <div
-                key={ans.id}
+                key={ans.id ?? i}
                 className={getOptClass(ans.id)}
                 style={{ animationDelay: i * 0.06 + 's' }}
                 onClick={() => onPick(ans.id, card.type)}
@@ -116,31 +113,29 @@ export default function QuizScreen({
                   className={`ind${card.type === 'multi' ? ' sq' : ''}`}
                   style={getIndStyle(ans.id)}
                 >
-                  {getIndLabel(ans.id, ans.id)}
+                  {getIndLabel(ans.id, ans.id ?? String.fromCharCode(97 + i))}
                 </div>
                 <span style={{ fontSize: 13 }}>{ans.text}</span>
               </div>
             ))}
           </div>
 
-          {/* Explanation */}
           {answered && (
             <div className="expl">
               <strong style={{ color: isCorrect ? 'var(--ok)' : 'var(--er)' }}>
                 {isCorrect ? '✓ Correct!' : '✗ Not quite.'}
               </strong>
               <br />
-              {card.explanation}
+              {card.explanation || ''}
             </div>
           )}
 
-          {/* Buttons */}
           <div className="row" style={{ marginTop: 16 }}>
             {!answered ? (
               <button
                 className="btn btn-p"
                 style={{ flex: 1 }}
-                disabled={selected.size === 0}
+                disabled={sel.size === 0}
                 onClick={onSubmit}
               >
                 Submit Answer
@@ -153,7 +148,6 @@ export default function QuizScreen({
           </div>
         </div>
 
-        {/* Quit */}
         <div className="center" style={{ marginTop: 14 }}>
           <button className="btn btn-g" style={{ fontSize: 12 }} onClick={onQuit}>
             ← Restart

@@ -415,7 +415,7 @@ CRITICAL: Detect the language of the study material and write ALL content (quest
     const correctSet = new Set(cards[idx].answers.filter(a => a.is_correct).map(a => a.id))
     setAnswered(true)
     if (setsEqual(selected, correctSet)) { scoreRef.current += 1; setScore(scoreRef.current) }
-    else setWrong(w => [...w, { card: cards[idx], selected: new Set(selected) }])
+    else setWrong(w => [...w, { card: cards[idx], selected: [...selected] }])
   }
   const nextCard = () => {
     const n = idx + 1
