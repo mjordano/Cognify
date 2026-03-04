@@ -36,13 +36,19 @@ function FileRow({ f, onRemove }) {
         <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 2 }}>
           {f.status === 'processing' && (
             <>
-              <span className="spin" style={{ width: 11, height: 11, borderWidth: 2 }} />
-              <span className="mu" style={{ fontSize: 11 }}>Processing…</span>
+              <span style={{
+                display: 'inline-block', width: 11, height: 11, flexShrink: 0,
+                border: '2px solid var(--bd)', borderTopColor: 'var(--pl)',
+                borderRadius: '50%', animation: 'spin .7s linear infinite',
+              }} />
+              <span className="mu" style={{ fontSize: 11 }}>
+                {f.statusMsg || 'Processing…'}
+              </span>
             </>
           )}
           {f.status === 'done' && (
             <span style={{ color: 'var(--ok)', fontSize: 11 }}>
-              ✓ Ready · {f.content.length.toLocaleString()} chars
+              {f.statusMsg || `✓ ${f.content.length.toLocaleString()} chars`}
             </span>
           )}
           {f.status === 'error' && (
