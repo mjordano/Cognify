@@ -20,6 +20,15 @@ export default function QuizScreen({
   // Always work with a real Set
   const sel = selected instanceof Set ? selected : new Set()
 
+  // Shuffle answers with a stable seed per question index so order
+  // doesn't change on re-render but varies across questions
+  const shuffledAnswers = [...card.answers].sort((a, b) => {
+    const seed = idx * 2654435761
+    const ha = ((seed ^ (a.id?.charCodeAt(0) || 0) * 1234567) >>> 0) / 0xFFFFFFFF
+    const hb = ((seed ^ (b.id?.charCodeAt(0) || 0) * 1234567) >>> 0) / 0xFFFFFFFF
+    return ha - hb
+  })
+
   const correctSet = new Set(
     card.answers.filter(a => a?.is_correct).map(a => a.id)
   )
@@ -102,7 +111,7 @@ export default function QuizScreen({
           </p>
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-            {card.answers.map((ans, i) => (
+            {shuffledAnswers.map((ans, i) => (
               <div
                 key={ans.id ?? i}
                 className={getOptClass(ans.id)}
