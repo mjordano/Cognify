@@ -1,3 +1,4 @@
+'use client'
 export default function MainScreen({
   activeTab, setActiveTab,
   studyText, setStudyText,
