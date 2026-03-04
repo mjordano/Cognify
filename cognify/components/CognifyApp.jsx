@@ -17,9 +17,8 @@ const PDF_WORKER_URL = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/p
 // OpenRouter config — OpenAI-compatible endpoint
 const OR_BASE       = 'https://openrouter.ai/api/v1'
 // Primary model: Gemini 2.0 Flash (free on OpenRouter)
-const OR_MODEL_TEXT = 'google/gemini-2.0-flash-exp:free'
-// Vision model: supports image inputs
-const OR_MODEL_VIS  = 'google/gemini-2.0-flash-exp:free'
+const OR_MODEL_TEXT = 'openrouter/free'
+const OR_MODEL_VIS  = 'openrouter/free'
 
 // ── Storage helpers ───────────────────────────────────────────────
 function getHistory() {
