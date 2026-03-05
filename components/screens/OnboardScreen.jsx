@@ -1,3 +1,5 @@
+import Logo from '../ui/Logo'
+
 export default function OnboardScreen({ obKey, setObKey, obError, onSave }) {
   return (
     <div className="screen" style={{ position: 'relative', overflow: 'hidden' }}>
@@ -5,34 +7,20 @@ export default function OnboardScreen({ obKey, setObKey, obError, onSave }) {
       <div style={{
         position: 'absolute', top: '50%', left: '50%',
         transform: 'translate(-50%, -60%)',
-        width: 500, height: 500,
-        background: 'radial-gradient(circle, rgba(255,102,0,0.06) 0%, rgba(0,224,168,0.03) 40%, transparent 70%)',
+        width: 600, height: 600,
+        background: 'radial-gradient(circle, rgba(168,85,247,0.12) 0%, rgba(236,72,153,0.06) 40%, transparent 70%)',
         pointerEvents: 'none', zIndex: 0,
       }} />
 
       <div className="wrap" style={{ paddingTop: 56, paddingBottom: 56 }}>
         {/* Hero section */}
-        <div className="center" style={{ marginBottom: 32, position: 'relative', zIndex: 2 }}>
-          {/* 3D Blob as centered hero decoration */}
-          <div style={{ marginBottom: 16 }}>
-            <img
-              src="/3d_blob.png"
-              alt=""
-              style={{
-                width: 160, height: 160,
-                objectFit: 'cover',
-                borderRadius: '50%',
-                opacity: 0.8,
-                animation: 'float 6s ease-in-out infinite',
-                filter: 'drop-shadow(0 8px 32px rgba(0,224,168,0.15))',
-                mixBlendMode: 'screen',
-              }}
-            />
+        <div className="center" style={{ marginBottom: 40, marginTop: 20, position: 'relative', zIndex: 2 }}>
+          <div style={{ marginBottom: 20 }}>
+            <Logo size="lg" />
           </div>
 
-          <h1 style={{ fontSize: '2.2rem', marginBottom: 4 }}>Cognify</h1>
-          <p className="italic-heading" style={{ fontSize: '0.95rem', marginTop: 4 }}>
-            Supercharge your learning
+          <p className="italic-heading" style={{ fontSize: '1.05rem', marginTop: 8, letterSpacing: '0.01em' }}>
+            Elevate your intelligence
           </p>
           <p className="mu" style={{
             marginTop: 12, fontSize: 13, maxWidth: 320,

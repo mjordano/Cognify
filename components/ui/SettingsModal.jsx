@@ -20,7 +20,7 @@ export default function SettingsModal({
         <p style={{
           fontFamily: 'DM Mono, monospace', color: 'var(--ac)', marginBottom: 16,
           fontSize: 13, background: 'var(--ac-soft)', padding: '10px 14px',
-          borderRadius: 'var(--radius-sm)', border: '1px solid rgba(0,224,168,0.1)',
+          borderRadius: 'var(--radius-sm)', border: '1px solid rgba(236, 72, 153,0.1)',
           fontWeight: 600
         }}>
           {maskedKey}

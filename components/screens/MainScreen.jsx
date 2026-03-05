@@ -1,12 +1,13 @@
 import { useRef, useState, useCallback } from 'react'
+import Logo from '../ui/Logo'
 
 const ACCEPT = '.pdf,.docx,.txt,.md,.jpg,.jpeg,.png,.webp,.gif'
 
 const KIND_META = {
-  pdf: { icon: '📄', color: '#ff4d6a', bg: 'rgba(255,77,106,0.06)', label: 'PDF' },
-  docx: { icon: '📝', color: '#00e0a8', bg: 'rgba(0,224,168,0.06)', label: 'Word' },
-  img: { icon: '🖼️', color: '#ffd000', bg: 'rgba(255,208,0,0.06)', label: 'Image' },
-  txt: { icon: '📃', color: '#FFA500', bg: 'rgba(255,165,0,0.06)', label: 'Text' },
+  pdf: { icon: '📄', color: '#f43f5e', bg: 'rgba(244, 63, 94,0.06)', label: 'PDF' },
+  docx: { icon: '📝', color: '#ec4899', bg: 'rgba(236, 72, 153,0.06)', label: 'Word' },
+  img: { icon: '🖼️', color: '#3b82f6', bg: 'rgba(59, 130, 246,0.06)', label: 'Image' },
+  txt: { icon: '📃', color: '#d8b4fe', bg: 'rgba(255,165,0,0.06)', label: 'Text' },
 }
 
 function FileRow({ f, onRemove }) {
@@ -62,7 +63,7 @@ function FileRow({ f, onRemove }) {
           borderRadius: 6, transition: 'all .2s', flexShrink: 0,
           display: 'flex', alignItems: 'center', justifyContent: 'center',
         }}
-        onMouseEnter={e => { e.target.style.color = 'var(--er)'; e.target.style.background = 'rgba(255,77,106,0.08)' }}
+        onMouseEnter={e => { e.target.style.color = 'var(--er)'; e.target.style.background = 'rgba(244, 63, 94,0.08)' }}
         onMouseLeave={e => { e.target.style.color = 'var(--mu)'; e.target.style.background = 'transparent' }}
         title="Remove file"
       >
@@ -105,11 +106,8 @@ export default function MainScreen({
     <div className="screen">
       <div className="wrap" style={{ paddingTop: 36, paddingBottom: 52 }}>
         {/* Header */}
-        <div className="center" style={{ marginBottom: 24 }}>
-          <h1 style={{ fontSize: '1.8rem', letterSpacing: '-0.03em' }}>
-            <span style={{ color: 'var(--p)', marginRight: 6 }}>✦</span>
-            Cognify
-          </h1>
+        <div className="center" style={{ marginBottom: 32 }}>
+          <Logo size="md" />
         </div>
 
         {/* Nav Tabs */}
@@ -265,7 +263,7 @@ export default function MainScreen({
                   style={{
                     width: 130, marginBottom: 14, opacity: 0.9,
                     animation: 'float 5s ease-in-out infinite',
-                    filter: 'drop-shadow(0 8px 24px rgba(255,102,0,0.15))',
+                    filter: 'drop-shadow(0 8px 24px rgba(168, 85, 247,0.15))',
                     borderRadius: 16,
                   }}
                 />
