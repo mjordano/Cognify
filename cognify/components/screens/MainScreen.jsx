@@ -3,10 +3,10 @@ import { useRef, useState, useCallback } from 'react'
 const ACCEPT = '.pdf,.docx,.txt,.md,.jpg,.jpeg,.png,.webp,.gif'
 
 const KIND_META = {
-  pdf:  { icon: '📄', color: '#f87171', bg: '#f8717115', label: 'PDF' },
-  docx: { icon: '📝', color: '#60a5fa', bg: '#60a5fa15', label: 'Word' },
-  img:  { icon: '🖼️', color: '#a78bfa', bg: '#a78bfa15', label: 'Image' },
-  txt:  { icon: '📃', color: '#34d399', bg: '#34d39915', label: 'Text' },
+  pdf: { icon: '📄', color: '#ff4d4d', bg: 'rgba(255,77,77,0.1)', label: 'PDF' },
+  docx: { icon: '📝', color: '#00e0a8', bg: 'rgba(0,224,168,0.1)', label: 'Word' },
+  img: { icon: '🖼️', color: '#ffd000', bg: 'rgba(255,208,0,0.1)', label: 'Image' },
+  txt: { icon: '📃', color: '#FFA500', bg: 'rgba(255,165,0,0.1)', label: 'Text' },
 }
 
 function FileRow({ f, onRemove }) {
@@ -15,44 +15,46 @@ function FileRow({ f, onRemove }) {
   return (
     <div
       style={{
-        display: 'flex', alignItems: 'center', gap: 10,
-        background: meta.bg,
-        border: `1px solid ${meta.color}33`,
-        borderRadius: 9, padding: '10px 12px',
+        display: 'flex', alignItems: 'center', gap: 16,
+        background: 'rgba(26,26,26,0.3)',
+        border: `1px solid ${meta.color}44`,
+        borderRadius: 16, padding: '14px 18px',
         animation: 'fadeIn .25s ease',
+        boxShadow: `inset 0 0 20px ${meta.bg}`,
       }}
     >
       {/* Icon */}
-      <span style={{ fontSize: 18, flexShrink: 0 }}>{meta.icon}</span>
+      <div style={{
+        fontSize: 22, flexShrink: 0, background: meta.bg,
+        width: 44, height: 44, display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: 12
+      }}>
+        {meta.icon}
+      </div>
 
       {/* Name + status */}
       <div style={{ flex: 1, minWidth: 0 }}>
         <p style={{
-          fontWeight: 600, fontSize: 13,
+          fontWeight: 700, fontSize: 14,
           whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
         }}>
           {f.name}
         </p>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 2 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 4 }}>
           {f.status === 'processing' && (
             <>
-              <span style={{
-                display: 'inline-block', width: 11, height: 11, flexShrink: 0,
-                border: '2px solid var(--bd)', borderTopColor: 'var(--pl)',
-                borderRadius: '50%', animation: 'spin .7s linear infinite',
-              }} />
-              <span className="mu" style={{ fontSize: 11 }}>
+              <span className="spin-sm" style={{ borderTopColor: meta.color }} />
+              <span className="mu" style={{ fontSize: 12, fontWeight: 500 }}>
                 {f.statusMsg || 'Processing…'}
               </span>
             </>
           )}
           {f.status === 'done' && (
-            <span style={{ color: 'var(--ok)', fontSize: 11 }}>
+            <span style={{ color: 'var(--ok)', fontSize: 12, fontWeight: 600 }}>
               {f.statusMsg || `✓ ${f.content.length.toLocaleString()} chars`}
             </span>
           )}
           {f.status === 'error' && (
-            <span style={{ color: 'var(--er)', fontSize: 11 }}>
+            <span style={{ color: 'var(--er)', fontSize: 12, fontWeight: 600 }}>
               ✗ {f.error}
             </span>
           )}
@@ -63,12 +65,12 @@ function FileRow({ f, onRemove }) {
       <button
         onClick={() => onRemove(f.id)}
         style={{
-          background: 'transparent', border: 'none', color: 'var(--mu)',
-          cursor: 'pointer', fontSize: 15, padding: '2px 4px',
-          borderRadius: 4, transition: 'color .15s', flexShrink: 0,
+          background: 'rgba(255,255,255,0.05)', border: 'none', color: 'var(--mu)',
+          cursor: 'pointer', fontSize: 16, width: 32, height: 32,
+          borderRadius: 8, transition: 'all .2s', flexShrink: 0,
         }}
-        onMouseEnter={e => e.target.style.color = 'var(--er)'}
-        onMouseLeave={e => e.target.style.color = 'var(--mu)'}
+        onMouseEnter={e => { e.target.style.color = 'var(--er)'; e.target.style.background = 'rgba(255,77,77,0.1)' }}
+        onMouseLeave={e => { e.target.style.color = 'var(--mu)'; e.target.style.background = 'rgba(255,255,255,0.05)' }}
         title="Remove file"
       >
         ✕
@@ -84,7 +86,7 @@ export default function MainScreen({
   setupError, onGenerate,
   history, onReplay, onDelete, onExport,
 }) {
-  const inputRef  = useRef(null)
+  const inputRef = useRef(null)
   const [dragging, setDragging] = useState(false)
 
   const handleDrop = useCallback((e) => {
@@ -101,20 +103,24 @@ export default function MainScreen({
     e.target.value = '' // reset so same file can be re-added
   }
 
-  const doneCount  = uploadedFiles.filter(f => f.status === 'done').length
+  const doneCount = uploadedFiles.filter(f => f.status === 'done').length
   const errorCount = uploadedFiles.filter(f => f.status === 'error').length
-  const busyCount  = uploadedFiles.filter(f => f.status === 'processing').length
+  const busyCount = uploadedFiles.filter(f => f.status === 'processing').length
   const canGenerate = doneCount > 0 && busyCount === 0
 
   return (
-    <div className="screen">
-      <div className="wrap">
-        <div className="center" style={{ marginBottom: 22 }}>
-          <h1>Cognify</h1>
+    <div className="screen" style={{ position: 'relative', overflow: 'hidden' }}>
+      <div className="watermark" style={{ top: '15%' }}>
+        {activeTab === 'new' ? 'STUDIO' : 'HISTORY'}
+      </div>
+
+      <div className="wrap" style={{ maxWidth: 780, padding: '40px 20px 80px' }}>
+        <div className="center" style={{ marginBottom: 40, position: 'relative', zIndex: 2 }}>
+          <h1 style={{ fontSize: '3rem' }}>Cognify</h1>
         </div>
 
         {/* Nav */}
-        <div className="nav">
+        <div className="nav" style={{ maxWidth: 400, margin: '0 auto 40px', position: 'relative', zIndex: 2 }}>
           <button
             className={`nav-btn${activeTab === 'new' ? ' active' : ''}`}
             onClick={() => setActiveTab('new')}
@@ -131,11 +137,11 @@ export default function MainScreen({
 
         {/* ── NEW DECK ── */}
         {activeTab === 'new' && (
-          <div>
-            <div className="card" style={{ padding: 20 }}>
+          <div style={{ position: 'relative', zIndex: 2 }}>
+            <div className="card" style={{ padding: 40 }}>
 
               {/* Drop zone */}
-              <div style={{ marginBottom: 16 }}>
+              <div style={{ marginBottom: 32 }}>
                 <label className="label">Upload Study Material</label>
                 <div
                   onDrop={handleDrop}
@@ -143,35 +149,39 @@ export default function MainScreen({
                   onDragLeave={handleDragLeave}
                   onClick={() => inputRef.current?.click()}
                   style={{
-                    border: `2px dashed ${dragging ? 'var(--pl)' : 'var(--bd)'}`,
-                    borderRadius: 12,
-                    padding: '32px 20px',
+                    border: `2px dashed ${dragging ? 'var(--p)' : 'rgba(255,255,255,0.1)'}`,
+                    borderRadius: 20,
+                    padding: '48px 24px',
                     textAlign: 'center',
                     cursor: 'pointer',
-                    background: dragging ? 'var(--pg)' : 'var(--s2)',
-                    transition: 'all .2s',
+                    background: dragging ? 'rgba(255,102,0,0.05)' : 'rgba(0,0,0,0.2)',
+                    transition: 'all .3s',
                     userSelect: 'none',
+                    boxShadow: dragging ? '0 0 30px rgba(255,102,0,0.1)' : 'none',
                   }}
                 >
-                  <div style={{ fontSize: '2.2rem', marginBottom: 10 }}>
-                    {dragging ? '📂' : '☁️'}
+                  <div style={{ marginBottom: 20, display: 'inline-block' }}>
+                    <div className="hex-icon" style={{ margin: '0 auto', fontSize: 24, width: 64, height: 72 }}>
+                      {dragging ? '📂' : '☁️'}
+                    </div>
                   </div>
-                  <p style={{ fontWeight: 600, marginBottom: 4 }}>
-                    {dragging ? 'Drop files here' : 'Drag & drop files here'}
+                  <p style={{ fontWeight: 800, fontSize: 18, marginBottom: 8, color: 'var(--tx)' }}>
+                    {dragging ? 'Drop to upload' : 'Drag & drop your files'}
                   </p>
-                  <p className="mu" style={{ marginBottom: 12 }}>
-                    or click to browse
+                  <p className="mu" style={{ marginBottom: 24, fontSize: 14 }}>
+                    or click to browse your computer
                   </p>
-                  <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'center', gap: 6 }}>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'center', gap: 10 }}>
                     {Object.entries(KIND_META).map(([kind, m]) => (
                       <span
                         key={kind}
                         style={{
-                          padding: '3px 8px', borderRadius: 99,
-                          fontSize: 11, fontWeight: 600,
+                          padding: '4px 12px', borderRadius: 99,
+                          fontSize: 12, fontWeight: 700,
                           background: m.bg, color: m.color,
-                          border: `1px solid ${m.color}44`,
+                          border: `1px solid ${m.color}66`,
                           fontFamily: 'DM Mono, monospace',
+                          letterSpacing: '0.05em'
                         }}
                       >
                         {m.icon} {m.label}
@@ -192,9 +202,9 @@ export default function MainScreen({
 
               {/* File list */}
               {uploadedFiles.length > 0 && (
-                <div style={{ marginBottom: 16 }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
-                    <span className="mu" style={{ fontSize: 11, textTransform: 'uppercase', letterSpacing: '.07em' }}>
+                <div style={{ marginBottom: 32 }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+                    <span className="mu" style={{ fontSize: 12, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '.1em' }}>
                       {uploadedFiles.length} file{uploadedFiles.length !== 1 ? 's' : ''} ·{' '}
                       {busyCount > 0 && <span style={{ color: 'var(--pl)' }}>{busyCount} processing</span>}
                       {busyCount > 0 && (doneCount > 0 || errorCount > 0) && ' · '}
@@ -204,13 +214,13 @@ export default function MainScreen({
                     </span>
                     <button
                       className="btn btn-g"
-                      style={{ fontSize: 11, padding: '4px 8px' }}
+                      style={{ fontSize: 12, padding: '6px 14px' }}
                       onClick={onClearFiles}
                     >
                       Clear all
                     </button>
                   </div>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
                     {uploadedFiles.map(f => (
                       <FileRow key={f.id} f={f} onRemove={onRemoveFile} />
                     ))}
@@ -219,10 +229,10 @@ export default function MainScreen({
               )}
 
               {/* Card count */}
-              <div style={{ marginBottom: 16 }}>
-                <div className="row" style={{ justifyContent: 'space-between', marginBottom: 8 }}>
+              <div style={{ marginBottom: 32, background: 'rgba(255,255,255,0.02)', padding: 20, borderRadius: 16, border: '1px solid rgba(255,255,255,0.05)' }}>
+                <div className="row" style={{ justifyContent: 'space-between', marginBottom: 12 }}>
                   <label className="label" style={{ margin: 0 }}>Flashcards to Generate</label>
-                  <span style={{ color: 'var(--ac)', fontWeight: 700, fontSize: '1.3rem' }}>
+                  <span style={{ color: 'var(--hi)', fontWeight: 900, fontSize: '1.8rem', textShadow: '0 0 15px rgba(255,208,0,0.4)' }}>
                     {cardCount}
                   </span>
                 </div>
@@ -230,49 +240,51 @@ export default function MainScreen({
                   type="range" min={5} max={30} value={cardCount}
                   onChange={e => setCardCount(Number(e.target.value))}
                 />
-                <div className="row" style={{ justifyContent: 'space-between', marginTop: 3 }}>
-                  <span className="mu">5</span><span className="mu">30</span>
+                <div className="row" style={{ justifyContent: 'space-between', marginTop: 8 }}>
+                  <span className="mu" style={{ fontWeight: 700 }}>5</span><span className="mu" style={{ fontWeight: 700 }}>30</span>
                 </div>
               </div>
 
               {setupError && (
-                <div className="err" style={{ marginBottom: 12 }}>⚠ {setupError}</div>
+                <div className="err" style={{ marginBottom: 20 }}>⚠ {setupError}</div>
               )}
 
               <button
                 className="btn btn-p full"
+                style={{ padding: '20px', fontSize: 16 }}
                 onClick={onGenerate}
                 disabled={!canGenerate}
                 title={!canGenerate ? 'Upload files and wait for processing' : ''}
               >
+                <span style={{ fontSize: 20, marginRight: 8 }}>✦</span>
                 {busyCount > 0
-                  ? `⏳ Processing ${busyCount} file${busyCount !== 1 ? 's' : ''}…`
-                  : '✦ Generate Flashcards'}
+                  ? `Processing ${busyCount} file${busyCount !== 1 ? 's' : ''}…`
+                  : 'Generate Flashcards'}
               </button>
 
               {!uploadedFiles.length && (
-                <p className="mu center" style={{ marginTop: 10, fontSize: 11 }}>
-                  Supports PDF, Word, plain text, markdown, and images
+                <p className="mu center" style={{ marginTop: 24, fontSize: 13, fontWeight: 500 }}>
+                  Supports PDF, Word, plain text, markdown, and images.
                 </p>
               )}
             </div>
 
-            <p className="mu center" style={{ marginTop: 10, fontSize: 11 }}>
-              Mixes single &amp; multiple choice · Powered by GPT-4o-mini
-            </p>
+            <div className="contrast-banner" style={{ marginTop: 60, marginBottom: 0 }}>
+              Powered by OpenRouter AI
+            </div>
           </div>
         )}
 
         {/* ── HISTORY ── */}
         {activeTab === 'hist' && (
-          <div>
-            <div className="row" style={{ justifyContent: 'space-between', marginBottom: 12 }}>
-              <span className="mu">
+          <div style={{ position: 'relative', zIndex: 2 }}>
+            <div className="row" style={{ justifyContent: 'space-between', marginBottom: 24 }}>
+              <span className="label" style={{ margin: 0, fontSize: 14 }}>
                 {history.length} session{history.length !== 1 ? 's' : ''}
               </span>
               <button
                 className="btn btn-g"
-                style={{ fontSize: 12, padding: '6px 12px' }}
+                style={{ fontSize: 12, padding: '8px 16px' }}
                 onClick={onExport}
               >
                 ↓ Export JSON
@@ -280,54 +292,59 @@ export default function MainScreen({
             </div>
 
             {history.length === 0 ? (
-              <div className="mu center" style={{ padding: '40px 0' }}>
-                No history yet. Complete a quiz to see it here.
+              <div className="center" style={{ padding: '60px 0' }}>
+                <img src="/3d_monster.png" alt="Empty" style={{ width: 180, opacity: 0.9, animation: 'float 5s ease-in-out infinite', marginBottom: 20 }} />
+                <h2 style={{ fontSize: '1.5rem', marginBottom: 10 }}>It's quiet here...</h2>
+                <p className="mu" style={{ fontSize: 15 }}>
+                  No history yet. Complete a quiz to see it here.
+                </p>
               </div>
             ) : (
               history.map((h, i) => {
                 const scoreColor =
                   h.score >= 80 ? 'var(--ok)' :
-                  h.score >= 50 ? 'var(--ac)' :
-                  'var(--er)'
+                    h.score >= 50 ? 'var(--hi)' :
+                      'var(--er)'
 
                 return (
                   <div key={h.id} className="hist-item" style={{ animationDelay: i * 0.04 + 's' }}>
                     <div
                       style={{
-                        width: 44, height: 44, borderRadius: '50%', flexShrink: 0,
-                        background: `conic-gradient(${scoreColor} ${h.score * 3.6}deg, var(--s2) 0)`,
+                        width: 54, height: 54, borderRadius: '50%', flexShrink: 0,
+                        background: `conic-gradient(${scoreColor} ${h.score * 3.6}deg, rgba(255,255,255,0.05) 0)`,
                         display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        boxShadow: `0 0 15px ${scoreColor}44`
                       }}
                     >
                       <div style={{
-                        width: 34, height: 34, borderRadius: '50%', background: 'var(--s2)',
+                        width: 44, height: 44, borderRadius: '50%', background: 'var(--bg-deep)',
                         display: 'flex', alignItems: 'center', justifyContent: 'center',
-                        fontSize: 11, fontWeight: 700, color: scoreColor,
+                        fontSize: 13, fontWeight: 800, color: scoreColor,
                       }}>
                         {h.score}%
                       </div>
                     </div>
 
-                    <div style={{ flex: 1, minWidth: 0 }}>
-                      <p style={{ fontWeight: 600, fontSize: 13, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                    <div style={{ flex: 1, minWidth: 0, marginLeft: 6 }}>
+                      <p style={{ fontWeight: 700, fontSize: 15, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', marginBottom: 4 }}>
                         {h.title}…
                       </p>
-                      <p className="mu" style={{ fontSize: 11, marginTop: 2 }}>
-                        {h.date} · {h.questions} questions
+                      <p className="mu" style={{ fontSize: 13 }}>
+                        {h.date} · <strong style={{ color: 'var(--tx)' }}>{h.questions}</strong> cards
                       </p>
                     </div>
 
-                    <div style={{ display: 'flex', gap: 6, flexShrink: 0 }}>
+                    <div style={{ display: 'flex', gap: 8, flexShrink: 0 }}>
                       <button
-                        className="btn btn-p"
-                        style={{ fontSize: 11, padding: '6px 10px' }}
+                        className="btn btn-g"
+                        style={{ fontSize: 12, padding: '8px 16px' }}
                         onClick={() => onReplay(h)}
                       >
                         ▶ Play
                       </button>
                       <button
                         className="btn btn-r"
-                        style={{ fontSize: 11, padding: '6px 10px' }}
+                        style={{ fontSize: 14, padding: '8px 12px' }}
                         onClick={() => onDelete(h.id)}
                       >
                         ✕
