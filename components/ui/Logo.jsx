@@ -47,14 +47,14 @@ export default function Logo({ size = 'md' }) {
             </svg>
             {/* Modern custom wordmark */}
             <div style={{
-                fontFamily: "'Outfit', sans-serif",
+                fontFamily: "'Inter', sans-serif",
                 fontSize: textSize,
                 lineHeight: 1,
                 letterSpacing: '-0.02em',
                 color: 'var(--tx)',
                 paddingTop: isLarge ? 4 : 2,
             }}>
-                <span style={{ fontWeight: 300 }}>Cog</span><span style={{ fontWeight: 800 }}>nify</span>
+                <span style={{ fontWeight: 800 }}>Cog</span><span style={{ fontWeight: 300 }}>nify</span>
             </div>
         </div>
     );

@@ -53,7 +53,7 @@ export default function QuizScreen({
         ? { borderColor: 'var(--ac)', color: 'var(--ac)', background: 'rgba(236, 72, 153,0.08)' }
         : { borderColor: 'var(--p)', color: 'var(--p)', background: 'var(--pg)' }
     }
-    if (correctSet.has(id) && sel.has(id)) return { borderColor: 'var(--ok)', color: 'var(--ok)', background: 'rgba(236, 72, 153,0.12)' }
+    if (correctSet.has(id) && sel.has(id)) return { borderColor: 'var(--ok)', color: 'var(--ok)', background: 'rgba(16, 185, 129, 0.12)' }
     if (!correctSet.has(id) && sel.has(id)) return { borderColor: 'var(--er)', color: 'var(--er)', background: 'rgba(244, 63, 94,0.12)' }
     if (correctSet.has(id) && !sel.has(id)) return { borderColor: 'var(--ok)', color: 'var(--ok)' }
     return {}
@@ -138,7 +138,7 @@ export default function QuizScreen({
             <div className="expl" style={{ marginTop: 24 }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
                 <span style={{
-                  background: isCorrect ? 'rgba(236, 72, 153,0.12)' : 'rgba(244, 63, 94,0.12)',
+                  background: isCorrect ? 'rgba(16, 185, 129, 0.12)' : 'rgba(244, 63, 94,0.12)',
                   color: isCorrect ? 'var(--ok)' : 'var(--er)',
                   padding: '3px 8px', borderRadius: 6, fontSize: 10,
                   fontWeight: 700, textTransform: 'uppercase',

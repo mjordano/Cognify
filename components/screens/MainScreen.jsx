@@ -212,6 +212,7 @@ export default function MainScreen({
                 <input
                   type="range" min={5} max={30} value={cardCount}
                   onChange={e => setCardCount(Number(e.target.value))}
+                  onInput={e => setCardCount(Number(e.target.value))}
                 />
                 <div className="row" style={{ justifyContent: 'space-between', marginTop: 4 }}>
                   <span className="mu" style={{ fontSize: 10 }}>5</span>

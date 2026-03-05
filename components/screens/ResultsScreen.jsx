@@ -88,11 +88,11 @@ export default function ResultsScreen({ cards, score, wrong, onRetry, onNewDeck 
         {safeWrong.length === 0 ? (
           <div className="card" style={{
             padding: '32px 24px', textAlign: 'center', marginBottom: 28,
-            borderColor: 'rgba(236, 72, 153,0.15)'
+            borderColor: 'rgba(16, 185, 129, 0.15)'
           }}>
             <p style={{
               fontSize: '2.5rem', marginBottom: 8,
-              filter: 'drop-shadow(0 0 12px rgba(236, 72, 153,0.3))'
+              filter: 'drop-shadow(0 0 12px rgba(16, 185, 129, 0.3))'
             }}>🏆</p>
             <p style={{ color: 'var(--ok)', fontWeight: 800, fontSize: '1.3rem', marginTop: 8 }}>
               Flawless Victory!
@@ -147,9 +147,9 @@ export default function ResultsScreen({ cards, score, wrong, onRetry, onNewDeck 
                   </div>
 
                   <div style={{
-                    background: 'rgba(236, 72, 153,0.05)', padding: '10px 14px',
+                    background: 'rgba(16, 185, 129, 0.05)', padding: '10px 14px',
                     borderRadius: 'var(--radius-sm)',
-                    border: '1px solid rgba(236, 72, 153,0.1)'
+                    border: '1px solid rgba(16, 185, 129, 0.1)'
                   }}>
                     <p className="label" style={{ color: 'var(--ok)', fontSize: 9, marginBottom: 3 }}>CORRECT ANSWER</p>
                     <p style={{ color: 'var(--tx)', fontWeight: 500, fontSize: 13 }}>{correctTexts}</p>

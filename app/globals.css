@@ -45,7 +45,7 @@ body {
   min-height: 100vh;
   background: var(--bg);
   color: var(--tx);
-  font-family: 'Outfit', 'Segoe UI', system-ui, -apple-system, sans-serif;
+  font-family: 'Inter', 'Segoe UI', system-ui, -apple-system, sans-serif;
   font-size: 14px;
   line-height: 1.6;
   font-weight: 400;
@@ -87,7 +87,7 @@ h1,
 h2,
 h3,
 .font-display {
-  font-family: 'Outfit', sans-serif;
+  font-family: 'Inter', sans-serif;
   letter-spacing: -0.02em;
 }
 
@@ -352,6 +352,8 @@ input[type="range"] {
   background: rgba(255, 255, 255, 0.06);
   cursor: pointer;
   outline: none;
+  position: relative;
+  z-index: 10;
 }
 
 input[type="range"]::-webkit-slider-thumb {
@@ -511,8 +513,8 @@ input[type="range"]::-moz-range-thumb {
 }
 
 .opt.ok {
-  border-color: rgba(236, 72, 153, 0.4);
-  background: rgba(236, 72, 153, 0.06);
+  border-color: rgba(16, 185, 129, 0.4);
+  background: rgba(16, 185, 129, 0.06);
 }
 
 .opt.bad {
@@ -521,7 +523,7 @@ input[type="range"]::-moz-range-thumb {
 }
 
 .opt.missed {
-  border-color: rgba(236, 72, 153, 0.3);
+  border-color: rgba(16, 185, 129, 0.3);
   border-style: dashed;
 }
 
