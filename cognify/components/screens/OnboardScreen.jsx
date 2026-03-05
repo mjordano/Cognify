@@ -1,20 +1,38 @@
+import Logo from '../ui/Logo'
+
 export default function OnboardScreen({ obKey, setObKey, obError, onSave }) {
   return (
-    <div className="screen">
-      <div className="wrap" style={{ paddingTop: 60, maxWidth: 480 }}>
-        <div className="center" style={{ marginBottom: 36 }}>
-          <div style={{
-            fontSize: '3rem', fontWeight: 800, marginBottom: 12,
-            background: 'linear-gradient(135deg, var(--pl), var(--ac))',
-            WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text',
-          }}>✦</div>
-          <h1>Cognify</h1>
-          <p className="mu" style={{ marginTop: 10, fontSize: 13, maxWidth: 320, margin: '10px auto 0' }}>
-            AI-powered flashcard studio. Uses OpenRouter for free AI access.
+    <div className="screen" style={{ position: 'relative', overflow: 'hidden' }}>
+      {/* Ambient blob glow behind content */}
+      <div style={{
+        position: 'absolute', top: '50%', left: '50%',
+        transform: 'translate(-50%, -60%)',
+        width: 600, height: 600,
+        background: 'radial-gradient(circle, rgba(168,85,247,0.12) 0%, rgba(236,72,153,0.06) 40%, transparent 70%)',
+        pointerEvents: 'none', zIndex: 0,
+      }} />
+
+      <div className="wrap" style={{ paddingTop: 56, paddingBottom: 56 }}>
+        {/* Hero section */}
+        <div className="center" style={{ marginBottom: 40, marginTop: 20, position: 'relative', zIndex: 2 }}>
+          <div style={{ marginBottom: 20 }}>
+            <Logo size="lg" />
+          </div>
+
+          <p className="italic-heading" style={{ fontSize: '1.05rem', marginTop: 8, letterSpacing: '0.01em' }}>
+            Elevate your intelligence
+          </p>
+          <p className="mu" style={{
+            marginTop: 12, fontSize: 13, maxWidth: 320,
+            marginLeft: 'auto', marginRight: 'auto', lineHeight: 1.7,
+          }}>
+            AI-powered flashcard studio. Turn any document into
+            interactive learning material instantly.
           </p>
         </div>
 
-        <div className="card" style={{ padding: 24 }}>
+        {/* API Key Card */}
+        <div className="card" style={{ padding: '28px 24px' }}>
           <label className="label" htmlFor="ob-key">OpenRouter API Key</label>
           <input
             id="ob-key"
@@ -26,54 +44,83 @@ export default function OnboardScreen({ obKey, setObKey, obError, onSave }) {
             onChange={e => setObKey(e.target.value)}
             onKeyDown={e => e.key === 'Enter' && onSave()}
           />
-          <p className="mu" style={{ marginTop: 6 }}>
-            🔒 Stored only in your browser's localStorage. Never sent anywhere except OpenRouter.
+          <p className="mu" style={{ marginTop: 8, fontSize: 11 }}>
+            🔒 Stored locally in your browser. Never sent anywhere except OpenRouter.
           </p>
-          {obError && <div className="err" style={{ marginTop: 10 }}>⚠ {obError}</div>}
-          <button className="btn btn-p full" style={{ marginTop: 16 }} onClick={onSave}>
-            Save Key &amp; Continue →
+          {obError && <div className="err" style={{ marginTop: 14 }}>⚠ {obError}</div>}
+          <button
+            className="btn btn-p full"
+            style={{ marginTop: 20, padding: '14px' }}
+            onClick={onSave}
+          >
+            Save Key &amp; Enter Studio →
           </button>
         </div>
 
+        <div className="contrast-banner">Free API Access</div>
+
         {/* Step-by-step guide */}
-        <div className="card" style={{ padding: '16px 18px', marginTop: 12, background: '#7c3aed0d', borderColor: '#7c3aed33' }}>
-          <p style={{ fontWeight: 700, fontSize: 13, marginBottom: 10 }}>
-            🆓 Get a free API key in 1 minute
+        <div className="card" style={{ padding: '22px 24px' }}>
+          <p style={{ fontWeight: 700, fontSize: 14, marginBottom: 14, color: 'var(--ac)' }}>
+            <span style={{ fontSize: 16, verticalAlign: 'middle', marginRight: 6 }}>🔓</span>
+            Get a free key in 1 minute
           </p>
-          <ol style={{ color: 'var(--mu)', fontSize: 12, paddingLeft: 18, lineHeight: 2 }}>
+          <ol style={{
+            color: 'var(--tx-secondary)', fontSize: 13, paddingLeft: 18,
+            lineHeight: 2.2, fontWeight: 400,
+          }}>
             <li>
               Go to{' '}
-              <a href="https://openrouter.ai/keys" target="_blank" rel="noreferrer" style={{ color: 'var(--pl)' }}>
+              <a href="https://openrouter.ai/keys" target="_blank" rel="noreferrer"
+                style={{ color: 'var(--p)', fontWeight: 600, textDecoration: 'none' }}>
                 openrouter.ai/keys
               </a>
             </li>
-            <li>Sign up / log in (free, no credit card)</li>
-            <li>Click <strong style={{ color: 'var(--tx)' }}>Create Key</strong></li>
-            <li>Copy the key (starts with <code style={{ color: 'var(--ac)', fontSize: 11 }}>sk-or-v1-</code>) and paste above</li>
+            <li>Sign up / log in <span className="mu" style={{ fontSize: 12 }}>(free, no card)</span></li>
+            <li>Click <strong style={{ color: 'var(--hi)' }}>Create Key</strong></li>
+            <li>
+              Paste the key above
+              <code style={{
+                color: 'var(--ac)', fontSize: 10,
+                background: 'var(--ac-soft)', padding: '2px 6px',
+                borderRadius: 4, marginLeft: 4,
+              }}>sk-or-v1-...</code>
+            </li>
           </ol>
-          <div style={{ marginTop: 10, padding: '10px 12px', background: 'var(--s2)', borderRadius: 8, border: '1px solid var(--bd)' }}>
-            <p style={{ fontSize: 12, fontWeight: 600, marginBottom: 4 }}>Free models included:</p>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-              {[
-                { name: 'Gemini 2.0 Flash', tag: 'google/gemini-2.0-flash-exp:free', note: 'Fast · Vision ✓' },
-              ].map(m => (
-                <div key={m.name} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
-                  <div>
-                    <span style={{ fontSize: 12, fontWeight: 600 }}>{m.name}</span>
-                    <span className="mu" style={{ fontSize: 10, marginLeft: 6 }}>{m.note}</span>
-                  </div>
-                  <code style={{ fontSize: 10, color: 'var(--mu)', background: 'var(--bg)', padding: '2px 6px', borderRadius: 4 }}>{m.tag}</code>
-                </div>
-              ))}
+
+          <div style={{
+            marginTop: 16, padding: '14px',
+            background: 'rgba(0,0,0,0.2)', borderRadius: 'var(--radius-sm)',
+            border: '1px solid var(--bd)',
+          }}>
+            <p style={{
+              fontSize: 10, fontWeight: 700, marginBottom: 8,
+              color: 'var(--mu)', textTransform: 'uppercase',
+              letterSpacing: '0.1em', fontFamily: 'DM Mono, monospace',
+            }}>
+              Included Free Model
+            </p>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
+              <div>
+                <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--tx)' }}>Gemini 2.0 Flash</span>
+                <span className="mu" style={{ fontSize: 11, marginLeft: 6 }}>Fast · Vision ✓</span>
+              </div>
+              <code style={{
+                fontSize: 10, color: 'var(--hi)',
+                background: 'var(--hi-soft)', padding: '3px 8px',
+                borderRadius: 6, fontWeight: 600,
+              }}>
+                free
+              </code>
             </div>
           </div>
-          <p className="mu" style={{ marginTop: 8, fontSize: 11 }}>
-            Free tier: no credit card · rate limits apply per model
-          </p>
         </div>
 
-        <p className="mu center" style={{ marginTop: 12, fontSize: 11 }}>
-          Powered by OpenRouter · Gemini 2.0 Flash (free)
+        <p className="mu center" style={{
+          marginTop: 32, fontSize: 10,
+          letterSpacing: '0.12em', textTransform: 'uppercase',
+        }}>
+          Powered by OpenRouter · Gemini 2.0 Flash
         </p>
       </div>
     </div>
