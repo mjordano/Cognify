@@ -17,33 +17,31 @@ export default function ResultsScreen({ cards, score, wrong, onRetry, onNewDeck 
     return () => clearTimeout(t)
   }, [pct])
 
-  // Normalize wrong entries — ensure answers exists and sel is a Set
   const safeWrong = (wrong || []).filter(w => w?.card && Array.isArray(w.card.answers))
 
   return (
-    <div className="screen" style={{ position: 'relative', overflow: 'hidden' }}>
-      <div className="watermark" style={{ top: '15%' }}>
-        RESULTS
-      </div>
-      <div className="wrap" style={{ maxWidth: 800, paddingBottom: 80 }}>
-        <div className="center" style={{ marginBottom: 40, position: 'relative', zIndex: 2 }}>
-          <p className="label" style={{ marginBottom: 12, letterSpacing: '0.2em', color: 'var(--mu)' }}>QUIZ COMPLETE</p>
-          <h1 style={{ fontSize: '3.5rem' }}>Your Results</h1>
+    <div className="screen">
+      <div className="wrap" style={{ maxWidth: 'var(--content-wide)', paddingBottom: 60 }}>
+
+        {/* Header */}
+        <div className="center" style={{ marginBottom: 28, position: 'relative', zIndex: 2 }}>
+          <p className="label" style={{ marginBottom: 8 }}>QUIZ COMPLETE</p>
+          <h1 style={{ fontSize: '2.2rem' }}>Your Results</h1>
         </div>
 
-        {/* Score ring */}
-        <div className="card" style={{ padding: '48px 32px', textAlign: 'center', marginBottom: 32, position: 'relative', zIndex: 2 }}>
-          <div className="ring-wrap" style={{ marginBottom: 32 }}>
-            <svg width="160" height="160" viewBox="0 0 130 130">
-              <circle cx="65" cy="65" r="56" fill="none" stroke="rgba(255,255,255,0.05)" strokeWidth="10" />
+        {/* Score ring card */}
+        <div className="card" style={{ padding: '36px 24px', textAlign: 'center', marginBottom: 24, position: 'relative', zIndex: 2 }}>
+          <div className="ring-wrap" style={{ marginBottom: 28 }}>
+            <svg width="140" height="140" viewBox="0 0 130 130">
+              <circle cx="65" cy="65" r="56" fill="none" stroke="rgba(255,255,255,0.03)" strokeWidth="8" />
               <circle
                 ref={arcRef}
                 cx="65" cy="65" r="56"
-                fill="none" stroke="url(#rg)" strokeWidth="10"
+                fill="none" stroke="url(#rg)" strokeWidth="8"
                 strokeLinecap="round"
                 strokeDasharray={circ}
                 strokeDashoffset={circ}
-                style={{ filter: 'drop-shadow(0 0 10px rgba(255,102,0,0.5))' }}
+                style={{ filter: 'drop-shadow(0 0 8px rgba(255,102,0,0.3))' }}
               />
               <defs>
                 <linearGradient id="rg" x1="0%" y1="0%" x2="100%" y2="100%">
@@ -53,48 +51,71 @@ export default function ResultsScreen({ cards, score, wrong, onRetry, onNewDeck 
               </defs>
             </svg>
             <div className="ring-center">
-              <div style={{ fontSize: '2.5rem', fontWeight: 900, lineHeight: 1, color: 'var(--tx)', textShadow: '0 0 20px rgba(255,255,255,0.2)' }}>{pct}<span style={{ fontSize: '1.5rem', marginLeft: 2 }}>%</span></div>
-              <div className="label" style={{ fontSize: 10, marginTop: 4 }}>SCORE</div>
+              <div style={{
+                fontSize: '2rem', fontWeight: 800, lineHeight: 1,
+                color: 'var(--tx)', fontFamily: 'Syne, sans-serif',
+              }}>
+                {pct}<span style={{ fontSize: '1.2rem', marginLeft: 1 }}>%</span>
+              </div>
+              <div className="label" style={{ fontSize: 9, marginTop: 4 }}>SCORE</div>
             </div>
           </div>
 
-          <div className="row" style={{ justifyContent: 'center', gap: 40, background: 'var(--bg-deep)', padding: '24px', borderRadius: 20, border: '1px solid rgba(255,255,255,0.05)', display: 'inline-flex' }}>
-            <div>
-              <div style={{ fontSize: '2rem', fontWeight: 800, color: 'var(--ok)' }}>{score}</div>
-              <div className="label" style={{ color: 'var(--mu)', marginTop: 4 }}>Correct</div>
+          {/* Stats row */}
+          <div style={{
+            display: 'inline-flex', gap: 0,
+            background: 'rgba(0,0,0,0.2)',
+            borderRadius: 'var(--radius-md)',
+            border: '1px solid var(--bd)',
+            overflow: 'hidden',
+          }}>
+            <div className="stat-box" style={{ border: 'none', borderRight: '1px solid var(--bd)', borderRadius: 0, padding: '16px 28px' }}>
+              <div className="stat-value" style={{ color: 'var(--ok)' }}>{score}</div>
+              <div className="stat-label">Correct</div>
             </div>
-            <div style={{ width: 1, height: 40, background: 'rgba(255,255,255,0.1)' }} />
-            <div>
-              <div style={{ fontSize: '2rem', fontWeight: 800, color: 'var(--er)' }}>{total - score}</div>
-              <div className="label" style={{ color: 'var(--mu)', marginTop: 4 }}>Mistakes</div>
+            <div className="stat-box" style={{ border: 'none', borderRight: '1px solid var(--bd)', borderRadius: 0, padding: '16px 28px' }}>
+              <div className="stat-value" style={{ color: 'var(--er)' }}>{total - score}</div>
+              <div className="stat-label">Mistakes</div>
             </div>
-            <div style={{ width: 1, height: 40, background: 'rgba(255,255,255,0.1)' }} />
-            <div>
-              <div style={{ fontSize: '2rem', fontWeight: 800, color: 'var(--tx)' }}>{total}</div>
-              <div className="label" style={{ color: 'var(--mu)', marginTop: 4 }}>Total</div>
+            <div className="stat-box" style={{ border: 'none', borderRadius: 0, padding: '16px 28px' }}>
+              <div className="stat-value" style={{ color: 'var(--tx)' }}>{total}</div>
+              <div className="stat-label">Total</div>
             </div>
           </div>
         </div>
 
-        {/* Review */}
+        {/* Review section */}
         {safeWrong.length === 0 ? (
-          <div className="card" style={{ padding: 40, textAlign: 'center', borderColor: 'rgba(0,224,168,0.3)', marginBottom: 40, background: 'rgba(0,224,168,0.05)' }}>
-            <p style={{ fontSize: '4rem', filter: 'drop-shadow(0 0 20px rgba(0,224,168,0.4))' }}>🏆</p>
-            <p style={{ color: 'var(--ok)', fontWeight: 900, fontSize: '1.8rem', marginTop: 16 }}>Flawless Victory!</p>
-            <p className="mu" style={{ marginTop: 8, fontSize: 16 }}>You got every single question right.</p>
+          <div className="card" style={{
+            padding: '32px 24px', textAlign: 'center', marginBottom: 28,
+            borderColor: 'rgba(0,224,168,0.15)'
+          }}>
+            <p style={{
+              fontSize: '2.5rem', marginBottom: 8,
+              filter: 'drop-shadow(0 0 12px rgba(0,224,168,0.3))'
+            }}>🏆</p>
+            <p style={{ color: 'var(--ok)', fontWeight: 800, fontSize: '1.3rem', marginTop: 8 }}>
+              Flawless Victory!
+            </p>
+            <p className="mu" style={{ marginTop: 6, fontSize: 13 }}>
+              You got every single question right.
+            </p>
           </div>
         ) : (
-          <div style={{ marginBottom: 40, position: 'relative', zIndex: 2 }}>
-            <div className="contrast-banner" style={{ margin: '40px 0 30px', background: 'rgba(255,77,77,0.1)', color: 'var(--er)', borderColor: 'rgba(255,77,77,0.2)' }}>
+          <div style={{ marginBottom: 28, position: 'relative', zIndex: 2 }}>
+            <div className="contrast-banner" style={{
+              margin: '24px 0 20px',
+              background: 'rgba(255,77,106,0.06)',
+              color: 'var(--er)',
+              borderColor: 'rgba(255,77,106,0.12)',
+            }}>
               REVIEW MISTAKES
             </div>
             {safeWrong.map(({ card, selected: sel }, i) => {
-              // Reconstruct Set safely regardless of how sel was stored
               let selSet
               if (sel instanceof Set) {
                 selSet = sel
               } else if (sel && typeof sel === 'object') {
-                // Handles plain objects, arrays, or serialized Sets
                 selSet = new Set(Array.isArray(sel) ? sel : Object.keys(sel))
               } else {
                 selSet = new Set()
@@ -111,23 +132,35 @@ export default function ResultsScreen({ cards, score, wrong, onRetry, onNewDeck 
                 .join(', ') || '—'
 
               return (
-                <div key={i} className="review-item card" style={{ padding: 24, marginBottom: 20, borderLeftColor: 'var(--er)' }}>
-                  <p style={{ fontWeight: 800, marginBottom: 12, fontSize: 16 }}>{card.question}</p>
+                <div key={i} className="review-item card" style={{ padding: '20px 22px', marginBottom: 12 }}>
+                  <p style={{ fontWeight: 700, marginBottom: 12, fontSize: 14, lineHeight: 1.5 }}>
+                    {card.question}
+                  </p>
 
-                  <div style={{ background: 'rgba(255,77,77,0.1)', padding: '12px 16px', borderRadius: 12, marginBottom: 8, border: '1px solid rgba(255,77,77,0.2)' }}>
-                    <p className="label" style={{ color: 'var(--er)', fontSize: 10, marginBottom: 4 }}>YOUR ANSWER</p>
-                    <p style={{ color: '#fff', fontWeight: 600 }}>{selectedTexts}</p>
+                  <div style={{
+                    background: 'rgba(255,77,106,0.05)', padding: '10px 14px',
+                    borderRadius: 'var(--radius-sm)', marginBottom: 6,
+                    border: '1px solid rgba(255,77,106,0.1)'
+                  }}>
+                    <p className="label" style={{ color: 'var(--er)', fontSize: 9, marginBottom: 3 }}>YOUR ANSWER</p>
+                    <p style={{ color: 'var(--tx)', fontWeight: 500, fontSize: 13 }}>{selectedTexts}</p>
                   </div>
 
-                  <div style={{ background: 'rgba(0,224,168,0.1)', padding: '12px 16px', borderRadius: 12, marginBottom: 16, border: '1px solid rgba(0,224,168,0.2)' }}>
-                    <p className="label" style={{ color: 'var(--ok)', fontSize: 10, marginBottom: 4 }}>CORRECT ANSWER</p>
-                    <p style={{ color: '#fff', fontWeight: 600 }}>{correctTexts}</p>
+                  <div style={{
+                    background: 'rgba(0,224,168,0.05)', padding: '10px 14px',
+                    borderRadius: 'var(--radius-sm)',
+                    border: '1px solid rgba(0,224,168,0.1)'
+                  }}>
+                    <p className="label" style={{ color: 'var(--ok)', fontSize: 9, marginBottom: 3 }}>CORRECT ANSWER</p>
+                    <p style={{ color: 'var(--tx)', fontWeight: 500, fontSize: 13 }}>{correctTexts}</p>
                   </div>
 
                   {card.explanation && (
-                    <div style={{ marginTop: 16, paddingTop: 16, borderTop: '1px dashed rgba(255,255,255,0.1)' }}>
-                      <p className="label" style={{ color: 'var(--hi)', fontSize: 10, marginBottom: 8 }}>EXPLANATION</p>
-                      <p style={{ color: '#bbb', fontSize: 14, lineHeight: 1.6 }}>{card.explanation}</p>
+                    <div style={{ marginTop: 12, paddingTop: 12, borderTop: '1px solid var(--bd)' }}>
+                      <p className="label" style={{ color: 'var(--mu)', fontSize: 9, marginBottom: 6 }}>EXPLANATION</p>
+                      <p style={{ color: 'var(--tx-secondary)', fontSize: 13, lineHeight: 1.7 }}>
+                        {card.explanation}
+                      </p>
                     </div>
                   )}
                 </div>
@@ -136,9 +169,14 @@ export default function ResultsScreen({ cards, score, wrong, onRetry, onNewDeck 
           </div>
         )}
 
-        <div className="row" style={{ gap: 20, position: 'relative', zIndex: 2 }}>
-          <button className="btn btn-g" style={{ flex: 1, padding: '20px', fontSize: 16 }} onClick={onRetry}>↺ Retry Same Deck</button>
-          <button className="btn btn-p" style={{ flex: 1, padding: '20px', fontSize: 16 }} onClick={onNewDeck}>✦ Return to Studio</button>
+        {/* Action buttons */}
+        <div className="row" style={{ gap: 12, position: 'relative', zIndex: 2 }}>
+          <button className="btn btn-g" style={{ flex: 1, padding: '16px', fontSize: 13 }} onClick={onRetry}>
+            ↺ Retry Deck
+          </button>
+          <button className="btn btn-p" style={{ flex: 1, padding: '16px', fontSize: 13 }} onClick={onNewDeck}>
+            ✦ Back to Studio
+          </button>
         </div>
       </div>
     </div>

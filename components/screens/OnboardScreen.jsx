@@ -1,32 +1,50 @@
 export default function OnboardScreen({ obKey, setObKey, obError, onSave }) {
   return (
     <div className="screen" style={{ position: 'relative', overflow: 'hidden' }}>
-      {/* Background Watermark */}
-      <div className="watermark" style={{ top: '10%' }}>COGNIFY AI</div>
-      
-      {/* Decorative 3D Blob */}
-      <img src="/3d_blob.png" alt="3D Blob" style={{
-        position: 'absolute', top: -50, right: -150, width: 450, opacity: 0.8,
-        animation: 'float 6s ease-in-out infinite'
+      {/* Ambient blob glow behind content */}
+      <div style={{
+        position: 'absolute', top: '50%', left: '50%',
+        transform: 'translate(-50%, -60%)',
+        width: 500, height: 500,
+        background: 'radial-gradient(circle, rgba(255,102,0,0.06) 0%, rgba(0,224,168,0.03) 40%, transparent 70%)',
+        pointerEvents: 'none', zIndex: 0,
       }} />
 
-      <div className="wrap" style={{ paddingTop: 80, paddingBottom: 80, maxWidth: 520 }}>
-        <div className="center" style={{ marginBottom: 40, position: 'relative', zIndex: 2 }}>
-          <div className="hex-wrap" style={{ display: 'inline-block', marginBottom: 20 }}>
-            <div className="hex-icon" style={{ width: 80, height: 90, fontSize: '36px' }}>
-              ✦
-            </div>
+      <div className="wrap" style={{ paddingTop: 56, paddingBottom: 56 }}>
+        {/* Hero section */}
+        <div className="center" style={{ marginBottom: 32, position: 'relative', zIndex: 2 }}>
+          {/* 3D Blob as centered hero decoration */}
+          <div style={{ marginBottom: 16 }}>
+            <img
+              src="/3d_blob.png"
+              alt=""
+              style={{
+                width: 160, height: 160,
+                objectFit: 'cover',
+                borderRadius: '50%',
+                opacity: 0.8,
+                animation: 'float 6s ease-in-out infinite',
+                filter: 'drop-shadow(0 8px 32px rgba(0,224,168,0.15))',
+                mixBlendMode: 'screen',
+              }}
+            />
           </div>
-          <h1>Cognify</h1>
-          <h2 className="italic-heading" style={{ fontSize: '1.2rem', marginTop: 10, color: 'var(--p)' }}>
+
+          <h1 style={{ fontSize: '2.2rem', marginBottom: 4 }}>Cognify</h1>
+          <p className="italic-heading" style={{ fontSize: '0.95rem', marginTop: 4 }}>
             Supercharge your learning
-          </h2>
-          <p className="mu" style={{ marginTop: 15, fontSize: 14, maxWidth: 360, margin: '15px auto 0' }}>
-            AI-powered flashcard studio. Uses OpenRouter for free AI access. Turn any document into interactive learning material instantly.
+          </p>
+          <p className="mu" style={{
+            marginTop: 12, fontSize: 13, maxWidth: 320,
+            marginLeft: 'auto', marginRight: 'auto', lineHeight: 1.7,
+          }}>
+            AI-powered flashcard studio. Turn any document into
+            interactive learning material instantly.
           </p>
         </div>
 
-        <div className="card" style={{ padding: 32 }}>
+        {/* API Key Card */}
+        <div className="card" style={{ padding: '28px 24px' }}>
           <label className="label" htmlFor="ob-key">OpenRouter API Key</label>
           <input
             id="ob-key"
@@ -38,57 +56,82 @@ export default function OnboardScreen({ obKey, setObKey, obError, onSave }) {
             onChange={e => setObKey(e.target.value)}
             onKeyDown={e => e.key === 'Enter' && onSave()}
           />
-          <p className="mu" style={{ marginTop: 10, fontSize: 12 }}>
-            🔒 Stored securely in your browser's localStorage. Never sent anywhere except OpenRouter.
+          <p className="mu" style={{ marginTop: 8, fontSize: 11 }}>
+            🔒 Stored locally in your browser. Never sent anywhere except OpenRouter.
           </p>
-          {obError && <div className="err" style={{ marginTop: 16 }}>⚠ {obError}</div>}
-          <button className="btn btn-p full" style={{ marginTop: 24, padding: '16px' }} onClick={onSave}>
+          {obError && <div className="err" style={{ marginTop: 14 }}>⚠ {obError}</div>}
+          <button
+            className="btn btn-p full"
+            style={{ marginTop: 20, padding: '14px' }}
+            onClick={onSave}
+          >
             Save Key &amp; Enter Studio →
           </button>
         </div>
 
-        <div className="contrast-banner">
-          Free API Access
-        </div>
+        <div className="contrast-banner">Free API Access</div>
 
         {/* Step-by-step guide */}
-        <div className="card" style={{ padding: '24px 28px', background: 'rgba(0, 224, 168, 0.05)', borderColor: 'rgba(0, 224, 168, 0.15)' }}>
-          <p style={{ fontWeight: 800, fontSize: 16, marginBottom: 16, color: 'var(--ac)' }}>
-            <span style={{ fontSize: 20, verticalAlign: 'middle', marginRight: 8 }}>🔓</span> Get a free key in 1 minute
+        <div className="card" style={{ padding: '22px 24px' }}>
+          <p style={{ fontWeight: 700, fontSize: 14, marginBottom: 14, color: 'var(--ac)' }}>
+            <span style={{ fontSize: 16, verticalAlign: 'middle', marginRight: 6 }}>🔓</span>
+            Get a free key in 1 minute
           </p>
-          <ol style={{ color: 'var(--tx)', fontSize: 14, paddingLeft: 20, lineHeight: 2.2, fontWeight: 500 }}>
+          <ol style={{
+            color: 'var(--tx-secondary)', fontSize: 13, paddingLeft: 18,
+            lineHeight: 2.2, fontWeight: 400,
+          }}>
             <li>
               Go to{' '}
-              <a href="https://openrouter.ai/keys" target="_blank" rel="noreferrer" style={{ color: 'var(--p)', fontWeight: 700, textDecoration: 'none' }}>
+              <a href="https://openrouter.ai/keys" target="_blank" rel="noreferrer"
+                style={{ color: 'var(--p)', fontWeight: 600, textDecoration: 'none' }}>
                 openrouter.ai/keys
               </a>
             </li>
-            <li>Sign up / log in <span className="mu">(free, no credit card)</span></li>
+            <li>Sign up / log in <span className="mu" style={{ fontSize: 12 }}>(free, no card)</span></li>
             <li>Click <strong style={{ color: 'var(--hi)' }}>Create Key</strong></li>
-            <li>Copy the key (starts with <code style={{ color: 'var(--ac)', fontSize: 12, background: 'rgba(0,224,168,0.1)', padding: '2px 6px', borderRadius: 4 }}>sk-or-v1-</code>) and paste above</li>
+            <li>
+              Paste the key above
+              <code style={{
+                color: 'var(--ac)', fontSize: 10,
+                background: 'var(--ac-soft)', padding: '2px 6px',
+                borderRadius: 4, marginLeft: 4,
+              }}>sk-or-v1-...</code>
+            </li>
           </ol>
-          <div style={{ marginTop: 20, padding: '16px', background: 'var(--bg-deep)', borderRadius: 12, border: '1px solid rgba(255,255,255,0.05)' }}>
-            <p style={{ fontSize: 12, fontWeight: 800, marginBottom: 10, color: 'var(--hi)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Included Free Models:</p>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-              {[
-                { name: 'Gemini 2.0 Flash', tag: 'google/gemini-2.0-flash-exp:free', note: 'Fast · Vision ✓' },
-              ].map(m => (
-                <div key={m.name} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10 }}>
-                  <div>
-                    <span style={{ fontSize: 14, fontWeight: 700 }}>{m.name}</span>
-                    <span className="mu" style={{ fontSize: 11, marginLeft: 8 }}>{m.note}</span>
-                  </div>
-                  <code style={{ fontSize: 11, color: 'var(--hi)', background: 'rgba(255, 208, 0, 0.1)', padding: '4px 8px', borderRadius: 6, fontWeight: 700 }}>{m.tag}</code>
-                </div>
-              ))}
+
+          <div style={{
+            marginTop: 16, padding: '14px',
+            background: 'rgba(0,0,0,0.2)', borderRadius: 'var(--radius-sm)',
+            border: '1px solid var(--bd)',
+          }}>
+            <p style={{
+              fontSize: 10, fontWeight: 700, marginBottom: 8,
+              color: 'var(--mu)', textTransform: 'uppercase',
+              letterSpacing: '0.1em', fontFamily: 'DM Mono, monospace',
+            }}>
+              Included Free Model
+            </p>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
+              <div>
+                <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--tx)' }}>Gemini 2.0 Flash</span>
+                <span className="mu" style={{ fontSize: 11, marginLeft: 6 }}>Fast · Vision ✓</span>
+              </div>
+              <code style={{
+                fontSize: 10, color: 'var(--hi)',
+                background: 'var(--hi-soft)', padding: '3px 8px',
+                borderRadius: 6, fontWeight: 600,
+              }}>
+                free
+              </code>
             </div>
           </div>
-          <p className="mu" style={{ marginTop: 16, fontSize: 12, textAlign: 'center' }}>
-            Free tier: no credit card required continually · normal reasonable limits apply
-          </p>
         </div>
 
-        <p className="mu center" style={{ marginTop: 40, fontSize: 12, letterSpacing: '0.05em', textTransform: 'uppercase', fontWeight: 600 }}>
+        <p className="mu center" style={{
+          marginTop: 32, fontSize: 10,
+          letterSpacing: '0.12em', textTransform: 'uppercase',
+        }}>
           Powered by OpenRouter · Gemini 2.0 Flash
         </p>
       </div>
