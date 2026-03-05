@@ -54,7 +54,7 @@ export default function Logo({ size = 'md' }) {
                 color: 'var(--tx)',
                 paddingTop: isLarge ? 4 : 2,
             }}>
-                <span style={{ fontWeight: 800 }}>Cog</span><span style={{ fontWeight: 300 }}>nify</span>
+                <span style={{ fontWeight: 800 }}>Cognify</span>
             </div>
         </div>
     );
