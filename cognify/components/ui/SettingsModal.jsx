@@ -5,16 +5,16 @@ export default function SettingsModal({
   return (
     <div className="overlay" onClick={e => e.target === e.currentTarget && onClose()}>
       <div className="modal">
-        <div className="row" style={{ justifyContent: 'space-between', marginBottom: 24, paddingBottom: 16, borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
-          <h2 style={{ fontSize: '1.5rem', color: 'var(--tx)' }}>⚙ Settings</h2>
-          <button className="btn btn-g" style={{ padding: '8px 14px', fontSize: 20, lineHeight: 1, borderRadius: '50%' }} onClick={onClose}>×</button>
+        <div className="row" style={{ justifyContent: 'space-between', marginBottom: 16 }}>
+          <h2>⚙ Settings</h2>
+          <button className="btn btn-g" style={{ padding: '4px 10px', fontSize: 18, lineHeight: 1 }} onClick={onClose}>×</button>
         </div>
 
-        <label className="label">Current API Key</label>
+        <label className="label">Current Key</label>
         <p style={{
-          fontFamily: 'DM Mono, monospace', color: 'var(--ac)', marginBottom: 20,
-          fontSize: 14, background: 'rgba(0,224,168,0.1)', padding: '12px 16px',
-          borderRadius: 12, border: '1px solid rgba(0,224,168,0.2)', fontWeight: 700
+          fontFamily: 'DM Mono, monospace', color: 'var(--pl)', marginBottom: 14,
+          fontSize: 13, background: 'var(--s2)', padding: '8px 12px',
+          borderRadius: 7, border: '1px solid var(--bd)',
         }}>
           {maskedKey}
         </p>
@@ -25,19 +25,19 @@ export default function SettingsModal({
           placeholder="sk-or-v1-..." autoComplete="off"
           value={newKey} onChange={e => setNewKey(e.target.value)}
           onKeyDown={e => e.key === 'Enter' && onSave()}
-          style={{ marginBottom: 16, fontSize: 16 }}
+          style={{ marginBottom: 10 }}
         />
 
-        {settingsError && <div className="err" style={{ marginBottom: 16 }}>⚠ {settingsError}</div>}
+        {settingsError && <div className="err" style={{ marginBottom: 10 }}>⚠ {settingsError}</div>}
 
-        <div className="row" style={{ gap: 16, marginTop: 24 }}>
-          <button className="btn btn-p" style={{ flex: 1, padding: '16px' }} onClick={onSave}>Save Key</button>
-          <button className="btn btn-r" style={{ flex: 1, padding: '16px' }} onClick={onDelete}>Remove</button>
+        <div className="row" style={{ gap: 10 }}>
+          <button className="btn btn-p" style={{ flex: 1 }} onClick={onSave}>Save New Key</button>
+          <button className="btn btn-r" style={{ flex: 1 }} onClick={onDelete}>Remove Key</button>
         </div>
 
-        <p className="mu" style={{ marginTop: 24, fontSize: 12, textAlign: 'center' }}>
+        <p className="mu" style={{ marginTop: 14, fontSize: 11, textAlign: 'center' }}>
           Manage keys at{' '}
-          <a href="https://openrouter.ai/keys" target="_blank" rel="noreferrer" style={{ color: 'var(--p)', fontWeight: 700, textDecoration: 'none' }}>
+          <a href="https://openrouter.ai/keys" target="_blank" rel="noreferrer" style={{ color: 'var(--pl)' }}>
             openrouter.ai/keys
           </a>
         </p>

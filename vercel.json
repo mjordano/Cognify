@@ -1,4 +1,7 @@
 {
   "framework": "nextjs",
-  "rootDirectory": "cognify"
+  "buildCommand": "next build",
+  "devCommand": "next dev",
+  "installCommand": "npm install",
+  "outputDirectory": ".next"
 }
