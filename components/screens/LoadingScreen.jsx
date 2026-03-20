@@ -1,19 +1,19 @@
 import { useEffect, useState } from 'react'
 
 const LOADING_MESSAGES = [
-  'Citamo materijal i vadimo kljucne pojmove...',
-  'Spajamo glavne ideje u logicke celine...',
-  'Kreiramo pitanja koja lice na pravi ispit...',
-  'Sastavljamo 1 tacan i 3 ubedljiva netacna odgovora...',
-  'Proveravamo da svako pitanje ima tacno 4 opcije...',
-  'Filtriramo suvise lake i suvise ocigledne odgovore...',
-  'Ne bi bilo lose da popijes malo vode dok AI radi...',
-  'Finalno peglanje kviza... jos par sekundi.'
+  'Citanje dokumenata...',
+  'Prepoznavanje najvaznijeg...',
+  'Sastavljanje liste pitanja...',
+  'Kreiranje tačnih odgovora...',
+  'Kreiranje 3+ ubedljiva ometaca...',
+  'Provera doslednosti i kvaliteta...',
+  'Finalno formatiranje kviza...'
 ]
 
 export default function LoadingScreen() {
   const [msgIdx, setMsgIdx] = useState(0)
   const [isFading, setIsFading] = useState(false)
+  const progress = (msgIdx + 1) / LOADING_MESSAGES.length
 
   useEffect(() => {
     let timerId
@@ -58,11 +58,14 @@ export default function LoadingScreen() {
       >
         <div className="spin" />
         <p style={{ fontWeight: 600, fontSize: '1rem', color: 'var(--tx)', marginTop: 4 }}>
-          Crafting your flashcards…
+          Priprema kartica...
         </p>
         <p className={`mu loading-msg ${isFading ? 'loading-msg--fade' : ''}`} style={{ fontSize: 12 }}>
           {LOADING_MESSAGES[msgIdx]}
         </p>
+        <div className="loading-bar" aria-hidden="true">
+          <div className="loading-bar-fill" style={{ width: `${Math.round(progress * 100)}%` }} />
+        </div>
       </div>
     </div>
   )

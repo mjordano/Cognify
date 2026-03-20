@@ -34,7 +34,8 @@ export default function QuizScreen({
   const isCorrect = answered && sel.size === correctSet.size &&
     [...sel].every(v => correctSet.has(v))
   const hasStreak = streak > 0
-  const streakLevel = streak >= 10 ? 'hot' : streak >= 5 ? 'warm' : 'base'
+  // Heat drives how much the purple flame "burns" visually (0..1).
+  const heat = Math.max(0, Math.min(1, streak / 20))
 
   const getOptClass = (id) => {
     let cls = 'opt'
@@ -100,7 +101,11 @@ export default function QuizScreen({
         <div style={{ position: 'relative' }}>
           {/* Streak Fire */}
           <div className="streak-fire-wrap">
-             <div className={`streak-fire streak-fire--${streakLevel} ${hasStreak ? 'streak-fire--active' : 'streak-fire--idle'} ${answered && !lastCorrect ? 'streak-extinguish' : ''}`}>
+             <div
+               className={`streak-fire ${hasStreak ? '' : 'streak-fire--idle'} ${answered && !lastCorrect ? 'streak-extinguish' : ''}`}
+               style={{ '--heat': heat, '--fire-size': `${44 + heat * 24}px` }}
+             >
+                <span className="streak-emoji" aria-hidden="true">🔥</span>
                 <div className="streak-fire-inner" />
                 <div className="streak-fire-core" />
                 <span className="streak-tip streak-tip-1" />

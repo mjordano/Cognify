@@ -13,7 +13,7 @@ const API_KEY_KEY    = 'cognify_api_key'
 const STREAK_KEY     = 'cognify_streak'
 const MAX_HISTORY    = 20
 const MAX_OCR_PAGES  = 10
-const REQUIRED_ANSWERS = 4
+const MIN_ANSWERS = 4
 const REQUIRED_CORRECT_ANSWERS = 1
 const GENERATION_RETRIES = 2
 const PDF_WORKER_URL = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js'
@@ -45,12 +45,12 @@ function getDeckValidationError(deck) {
   if (!Array.isArray(deck) || !deck.length) return 'No questions returned.'
   for (let i = 0; i < deck.length; i++) {
     const q = deck[i]
-    if (!Array.isArray(q?.answers) || q.answers.length !== REQUIRED_ANSWERS) {
-      return `Question ${i + 1} must have exactly ${REQUIRED_ANSWERS} answer options.`
+    if (!Array.isArray(q?.answers) || q.answers.length < MIN_ANSWERS) {
+      return `Question ${i + 1} must have at least ${MIN_ANSWERS} answer options.`
     }
     const correctCount = q.answers.filter(a => a?.is_correct === true).length
     if (correctCount !== REQUIRED_CORRECT_ANSWERS) {
-      return `Question ${i + 1} must have exactly ${REQUIRED_CORRECT_ANSWERS} correct answer and ${REQUIRED_ANSWERS - REQUIRED_CORRECT_ANSWERS} incorrect answers.`
+      return `Question ${i + 1} must have exactly ${REQUIRED_CORRECT_ANSWERS} correct answer.`
     }
     if (q.type !== 'single') {
       return `Question ${i + 1} must be single choice.`
@@ -402,10 +402,10 @@ export default function CognifyApp() {
 Generate exactly ${cardCount} flashcards.
 STRICT RULES (no exceptions):
 - Every question MUST be type "single".
-- Every question MUST contain exactly ${REQUIRED_ANSWERS} answer options.
-- Every question MUST contain exactly ${REQUIRED_CORRECT_ANSWERS} correct answer and ${REQUIRED_ANSWERS - REQUIRED_CORRECT_ANSWERS} incorrect answers.
+- Every question MUST contain at least ${MIN_ANSWERS} answer options (4-6 options recommended).
+- Every question MUST contain exactly ${REQUIRED_CORRECT_ANSWERS} correct answer.
 - Incorrect answers MUST be plausible and based on the study material context (misconceptions, near-miss facts, swapped terms), not random nonsense.
-- Never return fewer than ${REQUIRED_ANSWERS} options.
+- Never return fewer than ${MIN_ANSWERS} options.
 Explanations: 1-2 sentences.
 CRITICAL: Detect the language of the study material and write ALL content (questions, answers, explanations) in that same language. Do not translate into English.`
 
@@ -431,7 +431,7 @@ CRITICAL: Detect the language of the study material and write ALL content (quest
       }
 
       if (!validDeck) {
-        throw new Error(lastValidationError || `AI returned invalid quiz format. Each question must have exactly ${REQUIRED_ANSWERS} options (${REQUIRED_CORRECT_ANSWERS} correct + ${REQUIRED_ANSWERS - REQUIRED_CORRECT_ANSWERS} incorrect).`)
+        throw new Error(lastValidationError || `AI returned invalid quiz format. Each question must have at least ${MIN_ANSWERS} options and exactly ${REQUIRED_CORRECT_ANSWERS} correct answer.`)
       }
 
       setCards(validDeck)
@@ -461,10 +461,24 @@ CRITICAL: Detect the language of the study material and write ALL content (quest
     setWrong([])
     setAnswered(false)
     setSelected(new Set())
+    setStreak(0)
+    setLastCorrect(true)
+    localStorage.setItem(STREAK_KEY, 0)
     if (deck) setCards(deck)
     goTo('quiz')
   }
-  const retryQuiz = () => { scoreRef.current = 0; setIdx(0); setScore(0); setWrong([]); setAnswered(false); setSelected(new Set()); goTo('quiz') }
+  const retryQuiz = () => { 
+    scoreRef.current = 0
+    setIdx(0)
+    setScore(0)
+    setWrong([])
+    setAnswered(false)
+    setSelected(new Set())
+    setStreak(0)
+    setLastCorrect(true)
+    localStorage.setItem(STREAK_KEY, 0)
+    goTo('quiz')
+  }
   const pick = (id, type) => {
     if (answered) return
     setSelected(prev => {
