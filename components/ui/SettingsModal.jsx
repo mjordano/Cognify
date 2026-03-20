@@ -6,7 +6,7 @@ export default function SettingsModal({
     <div className="overlay" onClick={e => e.target === e.currentTarget && onClose()}>
       <div className="modal">
         <div className="row" style={{ justifyContent: 'space-between', marginBottom: 20, paddingBottom: 14, borderBottom: '1px solid var(--bd)' }}>
-          <h2 style={{ fontSize: '1.2rem', color: 'var(--tx)' }}>⚙ Settings</h2>
+          <h2 style={{ fontSize: '1.2rem', color: 'var(--tx)', fontFamily: 'Syne, sans-serif' }}>⚙ Settings</h2>
           <button
             className="btn btn-g"
             style={{ padding: '6px 12px', fontSize: 16, lineHeight: 1, borderRadius: '50%', minWidth: 32 }}
@@ -21,7 +21,7 @@ export default function SettingsModal({
           fontFamily: 'DM Mono, monospace', color: 'var(--ac)', marginBottom: 16,
           fontSize: 13, background: 'var(--ac-soft)', padding: '10px 14px',
           borderRadius: 'var(--radius-sm)', border: '1px solid rgba(236, 72, 153,0.1)',
-          fontWeight: 600
+          fontWeight: 600,
         }}>
           {maskedKey}
         </p>

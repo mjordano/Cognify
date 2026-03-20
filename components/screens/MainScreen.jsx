@@ -1,5 +1,6 @@
 import { useRef, useState, useCallback } from 'react'
 import Logo from '../ui/Logo'
+import FloatingParticles from '../ui/FloatingParticles'
 
 const ACCEPT = '.pdf,.docx,.txt,.md,.jpg,.jpeg,.png,.webp,.gif'
 
@@ -10,23 +11,27 @@ const KIND_META = {
   txt: { icon: '📃', color: '#d8b4fe', bg: 'rgba(255,165,0,0.06)', label: 'Text' },
 }
 
-function FileRow({ f, onRemove }) {
+function FileRow({ f, onRemove, index }) {
   const meta = KIND_META[f.kind] || { icon: '📎', color: 'var(--mu)', bg: 'var(--bg-elevated)', label: '' }
 
   return (
     <div style={{
       display: 'flex', alignItems: 'center', gap: 12,
       background: 'rgba(255,255,255,0.02)',
-      border: '1px solid rgba(255,255,255,0.04)',
+      border: '1px solid rgba(255,255,255,0.05)',
       borderRadius: 'var(--radius-md)', padding: '12px 14px',
-      animation: 'fadeIn .25s ease',
-      transition: 'background 0.2s',
-    }}>
+      animation: `slideInRight 0.35s var(--ease-spring) ${index * 0.06}s both`,
+      transition: 'all 0.25s var(--ease-out)',
+    }}
+      onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.04)'; e.currentTarget.style.borderColor = 'rgba(168,85,247,0.12)'; e.currentTarget.style.transform = 'translateX(4px)' }}
+      onMouseLeave={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.02)'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.05)'; e.currentTarget.style.transform = 'translateX(0)' }}
+    >
       <div style={{
         fontSize: 18, flexShrink: 0, background: meta.bg,
-        width: 36, height: 36, display: 'flex',
+        width: 38, height: 38, display: 'flex',
         alignItems: 'center', justifyContent: 'center',
         borderRadius: 10, border: `1px solid ${meta.color}22`,
+        transition: 'transform 0.3s var(--ease-spring)',
       }}>
         {meta.icon}
       </div>
@@ -46,7 +51,10 @@ function FileRow({ f, onRemove }) {
             </>
           )}
           {f.status === 'done' && (
-            <span style={{ color: 'var(--ok)', fontSize: 11, fontWeight: 500 }}>
+            <span style={{
+              color: 'var(--ok)', fontSize: 11, fontWeight: 500,
+              animation: 'fadeIn 0.3s ease',
+            }}>
               {f.statusMsg || `✓ ${f.content.length.toLocaleString()} chars`}
             </span>
           )}
@@ -59,12 +67,12 @@ function FileRow({ f, onRemove }) {
         onClick={() => onRemove(f.id)}
         style={{
           background: 'transparent', border: 'none', color: 'var(--mu)',
-          cursor: 'pointer', fontSize: 14, width: 28, height: 28,
-          borderRadius: 6, transition: 'all .2s', flexShrink: 0,
+          cursor: 'pointer', fontSize: 14, width: 30, height: 30,
+          borderRadius: 8, transition: 'all .25s var(--ease-spring)', flexShrink: 0,
           display: 'flex', alignItems: 'center', justifyContent: 'center',
         }}
-        onMouseEnter={e => { e.target.style.color = 'var(--er)'; e.target.style.background = 'rgba(244, 63, 94,0.08)' }}
-        onMouseLeave={e => { e.target.style.color = 'var(--mu)'; e.target.style.background = 'transparent' }}
+        onMouseEnter={e => { e.target.style.color = 'var(--er)'; e.target.style.background = 'rgba(244, 63, 94,0.1)'; e.target.style.transform = 'scale(1.15)' }}
+        onMouseLeave={e => { e.target.style.color = 'var(--mu)'; e.target.style.background = 'transparent'; e.target.style.transform = 'scale(1)' }}
         title="Remove file"
       >
         ✕
@@ -103,32 +111,36 @@ export default function MainScreen({
   const canGenerate = doneCount > 0 && busyCount === 0
 
   return (
-    <div className="screen">
+    <div className="screen" style={{ position: 'relative', overflow: 'hidden' }}>
+      <FloatingParticles count={14} />
+      <div className="floating-orb floating-orb--purple" style={{ width: 350, height: 350, top: '-10%', right: '-10%' }} />
+      <div className="floating-orb floating-orb--blue" style={{ width: 250, height: 250, bottom: '5%', left: '-8%' }} />
+
       <div className="wrap" style={{ paddingTop: 36, paddingBottom: 52 }}>
         {/* Header */}
-        <div className="center" style={{ marginBottom: 32 }}>
+        <div className="center" style={{ marginBottom: 32, animation: 'fadeIn 0.5s ease' }}>
           <Logo size="md" />
         </div>
 
         {/* Nav Tabs */}
-        <div className="nav" style={{ maxWidth: 300, margin: '0 auto 24px' }}>
+        <div className="nav" style={{ maxWidth: 300, margin: '0 auto 24px', animation: 'fadeIn 0.4s ease 0.15s both' }}>
           <button
             className={`nav-btn${activeTab === 'new' ? ' active' : ''}`}
             onClick={() => setActiveTab('new')}
           >
-            New Deck
+            ✦ New Deck
           </button>
           <button
             className={`nav-btn${activeTab === 'hist' ? ' active' : ''}`}
             onClick={() => setActiveTab('hist')}
           >
-            History
+            ◷ History
           </button>
         </div>
 
         {/* ── NEW DECK ── */}
         {activeTab === 'new' && (
-          <div>
+          <div style={{ animation: 'fadeInScale 0.4s var(--ease-spring)' }}>
             <div className="card" style={{ padding: '24px 22px' }}>
               {/* Drop zone */}
               <div style={{ marginBottom: 20 }}>
@@ -140,7 +152,11 @@ export default function MainScreen({
                   onDragLeave={handleDragLeave}
                   onClick={() => inputRef.current?.click()}
                 >
-                  <div style={{ fontSize: 28, marginBottom: 10, opacity: 0.8 }}>
+                  <div style={{
+                    fontSize: 32, marginBottom: 12, opacity: 0.9,
+                    transition: 'transform 0.3s var(--ease-spring)',
+                    transform: dragging ? 'scale(1.2) translateY(-4px)' : 'scale(1)',
+                  }}>
                     {dragging ? '📂' : '☁️'}
                   </div>
                   <p style={{ fontWeight: 700, fontSize: 14, marginBottom: 4, color: 'var(--tx)' }}>
@@ -191,7 +207,7 @@ export default function MainScreen({
                     </button>
                   </div>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                    {uploadedFiles.map(f => <FileRow key={f.id} f={f} onRemove={onRemoveFile} />)}
+                    {uploadedFiles.map((f, i) => <FileRow key={f.id} f={f} onRemove={onRemoveFile} index={i} />)}
                   </div>
                 </div>
               )}
@@ -203,8 +219,10 @@ export default function MainScreen({
                 <div className="row" style={{ justifyContent: 'space-between', marginBottom: 8 }}>
                   <label className="label" style={{ margin: 0 }}>Flashcards</label>
                   <span style={{
-                    color: 'var(--hi)', fontWeight: 800, fontSize: '1.3rem',
+                    color: 'var(--hi)', fontWeight: 800, fontSize: '1.4rem',
                     fontFamily: 'Syne, sans-serif',
+                    transition: 'transform 0.2s var(--ease-spring)',
+                    display: 'inline-block',
                   }}>
                     {cardCount}
                   </span>
@@ -224,7 +242,7 @@ export default function MainScreen({
 
               <button
                 className="btn btn-p full"
-                style={{ padding: '14px', fontSize: 14 }}
+                style={{ padding: '16px', fontSize: 14 }}
                 onClick={onGenerate}
                 disabled={!canGenerate}
               >
@@ -246,7 +264,7 @@ export default function MainScreen({
 
         {/* ── HISTORY ── */}
         {activeTab === 'hist' && (
-          <div>
+          <div style={{ animation: 'fadeInScale 0.4s var(--ease-spring)' }}>
             <div className="row" style={{ justifyContent: 'space-between', marginBottom: 16 }}>
               <span className="label" style={{ margin: 0 }}>
                 {history.length} session{history.length !== 1 ? 's' : ''}
@@ -258,18 +276,14 @@ export default function MainScreen({
 
             {history.length === 0 ? (
               <div className="center" style={{ padding: '40px 0' }}>
-                <img
-                  src="/mascot.png"
-                  alt="No history"
-                  style={{
-                    width: 130, marginBottom: 14, opacity: 0.9,
-                    animation: 'float 5s ease-in-out infinite',
-                    filter: 'drop-shadow(0 8px 24px rgba(168, 85, 247,0.15))',
-                    borderRadius: 16,
-                  }}
-                />
+                <div style={{
+                  fontSize: 48, marginBottom: 16,
+                  animation: 'float 4s ease-in-out infinite',
+                }}>
+                  📚
+                </div>
                 <h2 style={{ fontSize: '1.1rem', marginBottom: 6, color: 'var(--tx)' }}>
-                  It's quiet here...
+                  It&apos;s quiet here...
                 </h2>
                 <p className="mu" style={{ fontSize: 13 }}>
                   Complete a quiz to see it here.
@@ -282,14 +296,16 @@ export default function MainScreen({
                     h.score >= 50 ? 'var(--hi)' : 'var(--er)'
 
                 return (
-                  <div key={h.id} className="hist-item" style={{ animationDelay: i * 0.04 + 's' }}>
+                  <div key={h.id} className="hist-item" style={{ animationDelay: i * 0.05 + 's' }}>
                     <div style={{
-                      width: 40, height: 40, borderRadius: '50%', flexShrink: 0,
+                      width: 42, height: 42, borderRadius: '50%', flexShrink: 0,
                       background: `conic-gradient(${scoreColor} ${h.score * 3.6}deg, rgba(255,255,255,0.03) 0)`,
                       display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      boxShadow: `0 0 12px ${scoreColor}22`,
+                      transition: 'box-shadow 0.3s',
                     }}>
                       <div style={{
-                        width: 30, height: 30, borderRadius: '50%', background: 'var(--bg-deep)',
+                        width: 32, height: 32, borderRadius: '50%', background: 'var(--bg-deep)',
                         display: 'flex', alignItems: 'center', justifyContent: 'center',
                         fontSize: 10, fontWeight: 700, color: scoreColor,
                         fontFamily: 'DM Mono, monospace',

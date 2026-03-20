@@ -1,30 +1,37 @@
 import Logo from '../ui/Logo'
+import FloatingParticles from '../ui/FloatingParticles'
 
 export default function OnboardScreen({ obKey, setObKey, obError, onSave }) {
   return (
     <div className="screen" style={{ position: 'relative', overflow: 'hidden' }}>
-      {/* Ambient blob glow behind content */}
-      <div style={{
-        position: 'absolute', top: '50%', left: '50%',
-        transform: 'translate(-50%, -60%)',
-        width: 600, height: 600,
-        background: 'radial-gradient(circle, rgba(168,85,247,0.12) 0%, rgba(236,72,153,0.06) 40%, transparent 70%)',
-        pointerEvents: 'none', zIndex: 0,
-      }} />
+      <FloatingParticles count={22} />
+
+      {/* Ambient orbs */}
+      <div className="floating-orb floating-orb--purple"
+        style={{ width: 500, height: 500, top: '20%', left: '50%', transform: 'translate(-50%, -40%)' }} />
+      <div className="floating-orb floating-orb--pink"
+        style={{ width: 300, height: 300, bottom: '10%', right: '-5%' }} />
+      <div className="floating-orb floating-orb--blue"
+        style={{ width: 250, height: 250, top: '60%', left: '-8%' }} />
 
       <div className="wrap" style={{ paddingTop: 56, paddingBottom: 56 }}>
         {/* Hero section */}
-        <div className="center" style={{ marginBottom: 40, marginTop: 20, position: 'relative', zIndex: 2 }}>
-          <div style={{ marginBottom: 20 }}>
+        <div className="center" style={{ marginBottom: 44, marginTop: 20, position: 'relative', zIndex: 2 }}>
+          <div style={{ marginBottom: 20, animation: 'bounceIn 0.8s var(--ease-spring)' }}>
             <Logo size="lg" />
           </div>
 
-          <p className="italic-heading" style={{ fontSize: '1.05rem', marginTop: 8, letterSpacing: '0.01em' }}>
+          <p className="gradient-text" style={{
+            fontSize: '1.15rem', marginTop: 12, letterSpacing: '0.01em',
+            fontWeight: 700, fontStyle: 'italic',
+            animation: 'fadeIn 0.6s ease 0.3s both',
+          }}>
             Elevate your intelligence
           </p>
           <p className="mu" style={{
-            marginTop: 12, fontSize: 13, maxWidth: 320,
-            marginLeft: 'auto', marginRight: 'auto', lineHeight: 1.7,
+            marginTop: 14, fontSize: 13, maxWidth: 340,
+            marginLeft: 'auto', marginRight: 'auto', lineHeight: 1.8,
+            animation: 'fadeIn 0.6s ease 0.5s both',
           }}>
             AI-powered flashcard studio. Turn any document into
             interactive learning material instantly.
@@ -32,7 +39,10 @@ export default function OnboardScreen({ obKey, setObKey, obError, onSave }) {
         </div>
 
         {/* API Key Card */}
-        <div className="card" style={{ padding: '28px 24px' }}>
+        <div className="card" style={{
+          padding: '28px 24px',
+          animation: 'fadeInScale 0.6s var(--ease-spring) 0.4s both',
+        }}>
           <label className="label" htmlFor="ob-key">OpenRouter API Key</label>
           <input
             id="ob-key"
@@ -50,17 +60,22 @@ export default function OnboardScreen({ obKey, setObKey, obError, onSave }) {
           {obError && <div className="err" style={{ marginTop: 14 }}>⚠ {obError}</div>}
           <button
             className="btn btn-p full"
-            style={{ marginTop: 20, padding: '14px' }}
+            style={{ marginTop: 20, padding: '16px', fontSize: 14 }}
             onClick={onSave}
           >
             Save Key &amp; Enter Studio →
           </button>
         </div>
 
-        <div className="contrast-banner">Free API Access</div>
+        <div className="contrast-banner" style={{ animation: 'fadeIn 0.5s ease 0.6s both' }}>
+          Free API Access
+        </div>
 
         {/* Step-by-step guide */}
-        <div className="card" style={{ padding: '22px 24px' }}>
+        <div className="card" style={{
+          padding: '22px 24px',
+          animation: 'fadeInScale 0.6s var(--ease-spring) 0.7s both',
+        }}>
           <p style={{ fontWeight: 700, fontSize: 14, marginBottom: 14, color: 'var(--ac)' }}>
             <span style={{ fontSize: 16, verticalAlign: 'middle', marginRight: 6 }}>🔓</span>
             Get a free key in 1 minute
@@ -119,6 +134,7 @@ export default function OnboardScreen({ obKey, setObKey, obError, onSave }) {
         <p className="mu center" style={{
           marginTop: 32, fontSize: 10,
           letterSpacing: '0.12em', textTransform: 'uppercase',
+          animation: 'fadeIn 0.5s ease 1s both',
         }}>
           Powered by OpenRouter · Gemini 2.0 Flash
         </p>
