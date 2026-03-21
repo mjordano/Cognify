@@ -1,10 +1,19 @@
+'use client'
+import { useEffect, useRef } from 'react'
+
 export default function Logo({ size = 'md' }) {
   const isLarge = size === 'lg';
   const iconSize = isLarge ? 56 : 38;
   const textSize = isLarge ? '2.6rem' : '1.7rem';
+  const logoRef = useRef(null)
+
+  useEffect(() => {
+    if (!logoRef.current) return
+    logoRef.current.style.animation = 'float 6s ease-in-out infinite'
+  }, [])
 
   return (
-    <div style={{ display: 'inline-flex', alignItems: 'center', gap: isLarge ? 16 : 12 }}>
+    <div ref={logoRef} style={{ display: 'inline-flex', alignItems: 'center', gap: isLarge ? 16 : 12 }}>
       <div className="logo-glow" style={{ lineHeight: 0 }}>
         <svg width={iconSize} height={iconSize} viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
           <path d="M24 2L44 14V34L24 46L4 34V14L24 2Z" fill="url(#crystal_base)" fillOpacity="0.85" />

@@ -1154,15 +1154,18 @@ input[type="range"]::-moz-range-thumb {
 
 .particle-dot {
   position: absolute;
+  top: 100%;
+  left: 0;
   border-radius: 50%;
   animation: particleFloat linear infinite;
+  filter: blur(1px);
 }
 
 @keyframes particleFloat {
-  0% { transform: translateY(100vh) rotate(0deg); opacity: 0; }
-  10% { opacity: 0.6; }
-  90% { opacity: 0.6; }
-  100% { transform: translateY(-10vh) rotate(720deg); opacity: 0; }
+  0% { transform: translateY(0) rotate(0deg); opacity: 0; }
+  20% { opacity: 0.8; }
+  80% { opacity: 0.8; }
+  100% { transform: translateY(-110vh) rotate(360deg); opacity: 0; }
 }
 
 /* ── Stagger animations util ───────────────────────────── */
